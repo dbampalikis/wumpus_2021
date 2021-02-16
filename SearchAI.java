@@ -18,16 +18,23 @@ public class SearchAI extends Agent {
        LinkedList<Action> plan;
 
         // Remove the code below //
-         plan = new LinkedList<Action>();
-         for (int i = 0; i<8; i++)
+        plan = new LinkedList<Action>();
+/*
+
+        for (int i = 0; i<8; i++)
              plan.add(Agent.Action.FORWARD);
         plan.add(Action.TURN_LEFT);
         plan.add(Action.TURN_LEFT);
         for (int i = 10; i<18; i++)
             plan.add(Action.FORWARD);
         plan.add(Action.CLIMB);
-
-
+*/
+        plan.add(Agent.Action.FORWARD);
+        plan.add(Action.GRAB);
+        plan.add(Action.TURN_LEFT);
+        plan.add(Action.TURN_LEFT);
+        plan.add(Action.FORWARD);
+        plan.add(Action.CLIMB);
 
 
 
