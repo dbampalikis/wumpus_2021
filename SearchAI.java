@@ -38,8 +38,6 @@ public class SearchAI extends Agent {
 
     public SearchAI(World.Tile[][] board) {
 
-
-
         /* The world is board[coloumn][row] with initial position (bottom left) being board[0][0] */
 
        LinkedList<Action> plan;
@@ -50,17 +48,45 @@ public class SearchAI extends Agent {
         int pitArray[][] = new int[board.length][board[0].length];
         int wumpusArray[][] = new int[board.length][board[0].length];
         int goldArray[][] = new int[board.length][board[0].length];
+        String allArray[][] = new String[board.length][board[0].length];
 
-        /* A loop to get map information in a nice format */
+        /* A nested loop to get 2d map information in a nice format */
         for (int i = 0; i<board.length; i++)
         {
             for (int j = 0; j < board[0].length; j++)
             {
                 pitArray[i][j] = boolToInt(board[i][j].getPit());
-                wumpusArray[i][j] = boolToInt(board[i][j].getPit());
-                goldArray[i][j] = boolToInt(board[i][j].getPit());
+                wumpusArray[i][j] = boolToInt(board[i][j].getWumpus());
+                goldArray[i][j] = boolToInt(board[i][j].getGold());
+
+                /* Fill allArray with all information from this spot on the map */
+                if (pitArray[i][j] == 1)
+                {
+                    allArray[i][j] = allArray[i][j] + 'P';
+                }
+                if (wumpusArray[i][j] == 1)
+                {
+                    allArray[i][j] = allArray[i][j] + 'W';
+                }
+                if (goldArray[i][j] == 1)
+                {
+                    allArray[i][j] = allArray[i][j]+ '$';
+                }
             }
         }
+
+        /*
+         Here are arrays with the following format:
+         Inside every array one value will be TRUE and the other ones FALSE
+         Using arrays for this will make it easy for us to LOOP thru
+         every array when we create all possible states before doing the manhattan state search
+         */
+
+        int arrowStatus[] = new int[1];
+        int agentDirection[] = new int[3];
+        int carryingGold[] = new int[1];
+        int wumpusDead[] = new int[1];
+        int agentPosition[][] = new int[board.length][board[0].length];
 
 
 
