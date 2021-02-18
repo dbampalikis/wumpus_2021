@@ -84,7 +84,15 @@ public class SearchAI extends Agent {
                 System.out.println("Found gold");
                 break;
             }
+            current_state = frontier.remove();
+            frontier.add(getNextStates(current_state));
+            // Add the expanded state to the hash for closed
+            // and store parent and action taken
+            closed_set.add(current_state);
+
         }
+
+        // Backtrack on the hashmap in order to get the path
 
 
         // This must be the last instruction.
@@ -102,15 +110,20 @@ public class SearchAI extends Agent {
             System.out.println(act);
         }
 
+        // TODO: Check if the state already exists and then if it has better score than the stored one
+        // TODO: If not, remove state, otherwise update hashmap
+
+
         // Example of creating new state for one of the actions
         if (action == Action.FORWARD) {
             if (currentState.direction == 'r') {
-                // TODO: Calculate score for new state
+                // TODO: Calculate cost for new state: cost of parent + cost of action + manhattan (to gold and back)
                 // Score 15 is just an example below
                 newState = new State(0, currentState.positionY + 1, false, 'r', 15, currentState, action);
             }
 
         }
+
 
         return newState;
 
