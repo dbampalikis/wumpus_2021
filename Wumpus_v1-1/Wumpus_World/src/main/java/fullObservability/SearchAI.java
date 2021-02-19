@@ -134,6 +134,9 @@ public class SearchAI extends Agent {
             for (Action act: Action.values()) {
                 //System.out.println(act);
                 newState = getNextState(currentState, act, board, goldPosition);
+                if (newState.tscore > 1000) {
+                    continue;
+                }
                 String newStateStr = getStringFromState(newState);
                 if (!strState.containsKey(newStateStr)) {
                     frontier.add(newState);
@@ -167,10 +170,11 @@ public class SearchAI extends Agent {
 
         // Backtrack on the hashmap in order to get the path
 
-        System.out.println("Score of potential next move: " + frontier.peek().tscore);
+        //System.out.println("Score of potential next move: " + frontier.peek().tscore);
         // This must be the last instruction.
         if (frontier.isEmpty()) {
-            System.out.println("Score of the last move: " + frontier.peek().tscore);
+            System.out.println("Frontier was empty");
+            //System.out.println("Score of the last move: " + frontier.peek().tscore);
             plan.add(Action.CLIMB);
         }
         planIterator = plan.listIterator();
