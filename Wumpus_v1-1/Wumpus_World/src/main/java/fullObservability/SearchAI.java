@@ -395,7 +395,8 @@ public class SearchAI extends Agent {
             w = "1";
         }
 
-        stateCode = state.positionX + state.positionY + g + state.direction + a + w;
+        stateCode = Integer.toString(state.positionX) + Integer.toString(state.positionY) + g + state.direction + a + w;
+        System.out.println(stateCode);
 
         return stateCode;
 
