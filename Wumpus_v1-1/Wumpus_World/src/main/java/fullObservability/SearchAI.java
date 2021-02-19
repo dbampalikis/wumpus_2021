@@ -36,7 +36,6 @@ public class SearchAI extends Agent {
     private ListIterator<Action> planIterator;
 
 
-
     public SearchAI(World.Tile[][] board) {
 
         // Implements the method to calculate which element should
@@ -59,7 +58,10 @@ public class SearchAI extends Agent {
         Map<State, State> parent = new HashMap<>();
         Map<State, Integer> score = new HashMap<>();
         Map<State, Action> action = new HashMap<>();
+        // Connect string to state
+        Map<String, State> strState = new HashMap<>();
         List<State> explored;
+
 
         // Figure out if the gold is reachable
         LinkedList<Integer> goldPosition;
@@ -71,6 +73,8 @@ public class SearchAI extends Agent {
         // If the gold is not reachable, climb out
         if (!reachable) {
             plan.add(Action.CLIMB);
+            planIterator = plan.listIterator();
+            return;
         }
 
         // Create initial state and update its score
@@ -83,6 +87,8 @@ public class SearchAI extends Agent {
         parent.put(initialState, null);
         frontier.add(initialState);
 
+        String strCode = getStringFromState(initialState);
+        strState.put(strCode, initialState);
 
 
         //System.out.println("Initial state score:" + score.get(initialState));
@@ -90,45 +96,67 @@ public class SearchAI extends Agent {
         goalState = new State(0, 0, true, 5, 10, 0, true, true);
 
 
-        //newState = getNextStates(initialState, Action.FORWARD);
-        //System.out.println("PositionX: " + newState.positionX + " positionY: " + newState.positionY);
-
-
-
-        //parent.put(initialState, null);
-
-
-        //frontier.add(newState);
-        //frontier.add(goalState);
-        //frontier.add(test2);
-
         System.out.println("Getting to the main loop");
         while(!frontier.isEmpty()) {
+            System.out.println("Priority queue size:" + frontier.size());
             //System.out.println("Score: "+ frontier.remove().score);
 
 
             // The goal state: in position 0,0 while having the gold
             if (frontier.peek().positionX == 0 && frontier.peek().positionY == 0 && frontier.peek().gold) {
                 System.out.println("Found gold");
+                currentState = frontier.remove();
+                plan = getPath(currentState, parent, action);
+                System.out.println("Final plan:");
+                for(Action act : plan) System.out.print(act + " ");
+                System.out.println();
+
                 break;
             }
 
+            // TEST
+            /*System.out.print ( "Please input: " );
+            String userInput = in.next();*/
+            System.out.println(parent);
+            System.out.println(action);
 
             currentState = frontier.remove();
+            if (!strState.containsKey(getStringFromState(currentState))) {
+                System.out.println("Continue reached");
+                continue;
+            }
+
+            System.out.println("Priority queue size:" + frontier.size());
             printState(currentState, "Current state ");
             // TODO: Use the loop to iterate through all possible actions
             // TODO: Probably need if statements for non possible actions
             // eg climbing in a tile except for 0,0
             for (Action act: Action.values()) {
                 //System.out.println(act);
-                newState = getNextStates(currentState, act, board, goldPosition);
-                printState(newState, "New state ");
-                frontier.add(newState);
-                parent.put(newState, currentState);
-                action.put(newState, act);
-                score.put(newState, newState.tscore);
-                System.out.print ( "Please input: " );
-                String userInput = in.next();
+                newState = getNextState(currentState, act, board, goldPosition);
+                String newStateStr = getStringFromState(newState);
+                if (!strState.containsKey(newStateStr)) {
+                    frontier.add(newState);
+                    parent.put(newState, currentState);
+                    action.put(newState, act);
+                    score.put(newState, newState.tscore);
+
+                    strCode = getStringFromState(newState);
+                    strState.put(strCode, newState);
+                } else {
+                    State tmpState = strState.get(strCode);
+                    if (newState.tscore < score.get(tmpState) ) {
+                        frontier.add(newState);
+                        parent.put(newState, currentState);
+                        action.put(newState, act);
+                        score.put(newState, newState.tscore);
+                        strState.put(strCode, newState);
+                    }
+                }
+                System.out.println(act);
+                printState(newState, "New state     ");
+
+
             }
 
             // Add the expanded state to the hash for closed
@@ -139,12 +167,37 @@ public class SearchAI extends Agent {
 
         // Backtrack on the hashmap in order to get the path
 
-
+        System.out.println("Score of potential next move: " + frontier.peek().tscore);
         // This must be the last instruction.
+        if (frontier.isEmpty()) {
+            System.out.println("Score of the last move: " + frontier.peek().tscore);
+            plan.add(Action.CLIMB);
+        }
         planIterator = plan.listIterator();
     }
 
-    public State getNextStates(State prevState, Action action, World.Tile[][] board, LinkedList<Integer> goldPosition) {
+    public LinkedList getPath(State currentState, Map<State, State> parent, Map<State, Action> action) {
+       /* Scanner in = new Scanner(System.in);
+        System.out.print ( "Please input: " );
+        String userInput = in.next();*/
+
+        //System.out.println("Path");
+        LinkedList<Action> reversePath;
+        reversePath = new LinkedList<>();
+
+        reversePath.add(Action.CLIMB);
+        State tmpState = currentState;
+        //printState(tmpState, "Path recon");
+
+        while(parent.get(tmpState) != null) {
+
+            reversePath.addFirst(action.get(tmpState));
+            tmpState = parent.get(tmpState);
+        }
+        return reversePath;
+    }
+
+    public State getNextState(State prevState, Action action, World.Tile[][] board, LinkedList<Integer> goldPosition) {
 
 
         int colDimension = board[0].length;
@@ -182,7 +235,8 @@ public class SearchAI extends Agent {
                 ++currentState.gscore;
 
                 // Check if the new position is pit or wumpus
-                if ( board[currentState.positionX][currentState.positionY].getPit() || board[currentState.positionX][currentState.positionY].getWumpus() )
+                if ( board[currentState.positionX][currentState.positionY].getPit() || (board[currentState.positionX][currentState.positionY].getWumpus()
+                        && currentState.wumpus))
                 {
                     currentState.gscore += 1000;
                 }
@@ -225,6 +279,8 @@ public class SearchAI extends Agent {
                                 currentState.wumpus = false;
                             }
                     }
+                } else {
+                    ++currentState.gscore;
                 }
                 break;
 
@@ -240,8 +296,9 @@ public class SearchAI extends Agent {
                 if ( currentState.positionX == 0 && currentState.positionY == 0 )
                 {
                     if ( currentState.gold )
-                        currentState.gscore += 1000;
+                        currentState.gscore -= 1000;
                 }
+                ++currentState.gscore;
                 break;
         }
 
@@ -310,11 +367,35 @@ public class SearchAI extends Agent {
     }
 
     public void printState(State state, String init) {
-        System.out.println(init + state.positionX + ", " + state.positionY + " gold: " + state.gold +
-                " dir " + state.direction + " gscore " + state.gscore +  " tscore " + state.tscore +
-                " arrow " + state.arrow + " wumpus " + state.wumpus);
+        System.out.println(init + "\t" + state.positionX + ",\t" + state.positionY + "\tgold: " + state.gold +
+                "\tdir " + state.direction + "\tgscore " + state.gscore +  "\ttscore " + state.tscore +
+                "\tarrow " + state.arrow + "\twumpus " + state.wumpus);
     }
 
+    public String getStringFromState(State state) {
+        String stateCode, g, a, w;
+
+        if (!state.gold) {
+            g = "0";
+        } else {
+            g = "1";
+        }
+        if (!state.arrow) {
+            a = "0";
+        } else {
+            a = "1";
+        }
+        if (!state.wumpus) {
+            w = "0";
+        } else {
+            w = "1";
+        }
+
+        stateCode = state.positionX + state.positionY + g + state.direction + a + w;
+
+        return stateCode;
+
+    }
 
     @Override
     public Agent.Action getAction(boolean stench, boolean breeze, boolean glitter, boolean bump, boolean scream) {
