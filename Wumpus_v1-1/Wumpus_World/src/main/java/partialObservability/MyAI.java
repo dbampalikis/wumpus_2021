@@ -46,28 +46,6 @@ public class MyAI extends Agent
 
 	}
 
-/*	public class State {
-		int positionX;
-		int positionY;
-		boolean gold;
-		int direction; // The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
-		int gscore;
-		int tscore;
-		boolean arrow;
-		boolean wumpus;
-
-		public State(int positionX, int positionY, boolean gold_retrieved, int direction, int gscore, int tscore, boolean arrow, boolean wumpus) {
-			this.positionX = positionX;
-			this.positionY = positionY;
-			this.gold = gold_retrieved;
-			this.direction = direction;
-			this.gscore = gscore;
-			this.tscore = tscore;
-			this.arrow = arrow;
-			this.wumpus = wumpus;
-		}
-	}
-*/
 	public Action getAction
 	(
 		boolean stench,
@@ -77,19 +55,15 @@ public class MyAI extends Agent
 		boolean scream
 	)
 	{
-/*		// Define the initial state.
-		State initialState;
-		initialState = new State(0, 0, false, 0, 0, Integer.MAX_VALUE, true, true);
-		initialState.tscore = initialState.gscore + 0; // No Manhattan for now.
 
-		// KB: add the things we know.
+		/*
+	    // KB: add the things we know.
 		String[] axioms = {"P00", "W00", "G00"};
 		PlBeliefSet bs = new PlBeliefSet();
 		for (String axiom : axioms) {
 			Proposition p = new Proposition(axiom);
 			bs.add((PlFormula) p.complement());
 		}
-		System.out.println("know: " + bs);
 
 		// KB: add the things we perceived.
 
@@ -106,23 +80,10 @@ public class MyAI extends Agent
 			bs.add((PlFormula) w1.complement().combineWithAnd(w2.complement())); // no wumpus in both [0,1] and [1,0]
 		}
 
-		Proposition b = new Proposition("B00");
-		Proposition p1 = new Proposition("P10");
-		Proposition p2 = new Proposition("P01");
-		if (stench) {
-			bs.add((PlFormula) b); // breeze in [0,0]
-			bs.add((PlFormula) p1.combineWithOr(w2)); // pit in either [0,1] or [1,0]
-		} else {
-			bs.add((PlFormula) b.complement()); // // no breeze in [0,0]
-			bs.add((PlFormula) p1.complement().combineWithAnd(p2.complement())); // no pit in both [0,1] and [1,0]
-		}
-
-
-		System.out.println("know and feel: " + bs);
+		System.out.println("bs: " + bs);
 
 		System.out.println("Percepts before the move: " + stench + " " + breeze + " " + glitter + " " + bump + " " + scream);
 		System.out.println("Map after the move:");
-
 
 */
 
