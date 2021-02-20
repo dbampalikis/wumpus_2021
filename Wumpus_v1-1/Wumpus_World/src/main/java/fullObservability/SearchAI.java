@@ -68,13 +68,13 @@ public class SearchAI extends Agent {
         getGoldPosition(board, goldPosition);
         //System.out.println(goldPosition);
 
-        /*boolean reachable = isGoldReachable(board);
+        boolean reachable = isGoldReachable(board);
         // If the gold is not reachable, climb out
         if (!reachable) {
             plan.add(Action.CLIMB);
             planIterator = plan.listIterator();
             return;
-        }*/
+        }
 
         // Create initial state and update its score
         //System.out.println("Creating initial state");
@@ -326,8 +326,8 @@ public class SearchAI extends Agent {
     // TODO: Are there more cases where we should climb out?
     public boolean isGoldReachable(World.Tile[][] board){
 
-        for(int i=0; i<board[0].length; i++) {
-            for(int j=0; j<board[1].length; j++) {
+        for(int i=0; i<board.length; i++) {
+            for(int j=0; j<board[0].length; j++) {
                 if(board[i][j].getGold()) {
                     // Case where gold is in pit
                     if(board[i][j].getPit()) {
