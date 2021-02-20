@@ -249,7 +249,7 @@ public class SearchAI extends Agent {
                 if ( currentState.arrow )
                 {
                     currentState.arrow = false;
-                    currentState.gscore += 10;
+                    currentState.gscore += 11;
                     if ( currentState.direction == 0 )
                     {
                         for ( int x = currentState.positionX; x < colDimension; ++x )
