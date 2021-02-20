@@ -29,7 +29,7 @@ public class MainSearch
 		// Important Variables
 		boolean search       = true;
 		boolean debug        = false;
-		boolean verbose      = false;
+		boolean verbose      = true;
 		boolean randomAI     = false;
 		boolean manualAI      = false;
 		boolean folder       = false;
@@ -199,6 +199,7 @@ public class MainSearch
 
 				numOfScores += 1;
 				sumOfScores += score;
+				System.out.println(score);
 				sumOfScoresSquared += score*score;
 				totalTime += elapsedTime;
 			}

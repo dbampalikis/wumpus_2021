@@ -119,9 +119,9 @@ public class SearchAI extends Agent {
             //System.out.println(parent);
             //System.out.println(action);
 
-            currentState = frontier.remove();
+            currentState = frontier.remove(); // Returns the state with the minimal cost - the best state to explore next.
             if (!strState.containsKey(getStringFromState(currentState))) {
-                //System.out.println("Continue reached");
+                System.out.println("Continue reached"); // This is never printed. Is it never used?
                 continue;
             }
 
@@ -134,6 +134,7 @@ public class SearchAI extends Agent {
                 //System.out.println(act);
                 newState = getNextState(currentState, act, board, goldPosition);
                 if (newState.tscore > 1000) {
+                    // Cost is too high => Agent is dead => Skip this action.
                     continue;
                 }
                 // Case where state has not been reached before
@@ -174,7 +175,7 @@ public class SearchAI extends Agent {
         //System.out.println("Score of potential next move: " + frontier.peek().tscore);
         // This must be the last instruction.
         if (frontier.isEmpty()) {
-            System.out.println("Frontier was empty");
+            //System.out.println("Frontier was empty");
             //System.out.println("Score of the last move: " + frontier.peek().tscore);
             plan.add(Action.CLIMB);
         }
