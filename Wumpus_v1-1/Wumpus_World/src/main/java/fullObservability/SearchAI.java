@@ -41,7 +41,6 @@ public class SearchAI extends Agent {
         // Implements the method to calculate which element should
         // be removed from the priority list. Compares the scores
         // of the states and removes the one with the smallest
-        // TODO: Maybe we need the opposite?
         Comparator<State> stateComparator = new Comparator<>() {
             @Override
             public int compare(State state1, State state2) {
@@ -67,18 +66,18 @@ public class SearchAI extends Agent {
         LinkedList<Integer> goldPosition;
         goldPosition = new LinkedList<Integer>();
         getGoldPosition(board, goldPosition);
-        System.out.println(goldPosition);
+        //System.out.println(goldPosition);
 
-        boolean reachable = isGoldReachable(board);
+        /*boolean reachable = isGoldReachable(board);
         // If the gold is not reachable, climb out
         if (!reachable) {
             plan.add(Action.CLIMB);
             planIterator = plan.listIterator();
             return;
-        }
+        }*/
 
         // Create initial state and update its score
-        System.out.println("Creating initial state");
+        //System.out.println("Creating initial state");
         State initialState, newState, goalState, currentState;
         initialState = new State(0, 0, false, 0, 0, Integer.MAX_VALUE, true, true);
         initialState.tscore = initialState.gscore + calculateManhattan(initialState, goldPosition);
@@ -96,20 +95,20 @@ public class SearchAI extends Agent {
         goalState = new State(0, 0, true, 5, 10, 0, true, true);
 
 
-        System.out.println("Getting to the main loop");
+        //System.out.println("Getting to the main loop");
         while(!frontier.isEmpty()) {
-            System.out.println("Priority queue size:" + frontier.size());
+            //System.out.println("Priority queue size:" + frontier.size());
             //System.out.println("Score: "+ frontier.remove().score);
 
 
             // The goal state: in position 0,0 while having the gold
             if (frontier.peek().positionX == 0 && frontier.peek().positionY == 0 && frontier.peek().gold) {
-                System.out.println("Found gold");
+                //System.out.println("Found gold");
                 currentState = frontier.remove();
                 plan = getPath(currentState, parent, action);
-                System.out.println("Final plan:");
-                for(Action act : plan) System.out.print(act + " ");
-                System.out.println();
+                //System.out.println("Final plan:");
+                //for(Action act : plan) System.out.print(act + " ");
+                //System.out.println();
 
                 break;
             }
@@ -117,17 +116,17 @@ public class SearchAI extends Agent {
             // TEST
             /*System.out.print ( "Please input: " );
             String userInput = in.next();*/
-            System.out.println(parent);
-            System.out.println(action);
+            //System.out.println(parent);
+            //System.out.println(action);
 
             currentState = frontier.remove();
             if (!strState.containsKey(getStringFromState(currentState))) {
-                System.out.println("Continue reached");
+                //System.out.println("Continue reached");
                 continue;
             }
 
-            System.out.println("Priority queue size:" + frontier.size());
-            printState(currentState, "Current state ");
+            //System.out.println("Priority queue size:" + frontier.size());
+            //printState(currentState, "Current state ");
             // TODO: Use the loop to iterate through all possible actions
             // TODO: Probably need if statements for non possible actions
             // eg climbing in a tile except for 0,0
@@ -156,8 +155,8 @@ public class SearchAI extends Agent {
                         strState.put(strCode, newState);
                     }
                 }
-                System.out.println(act);
-                printState(newState, "New state     ");
+                //System.out.println(act);
+                //printState(newState, "New state     ");
 
 
             }
@@ -204,8 +203,8 @@ public class SearchAI extends Agent {
     public State getNextState(State prevState, Action action, World.Tile[][] board, LinkedList<Integer> goldPosition) {
 
 
-        int colDimension = board[0].length;
-        int rowDimension = board[1].length;
+        int colDimension = board.length;
+        int rowDimension = board[0].length;
 
         State currentState = new State(prevState.positionX, prevState.positionY, prevState.gold, prevState.direction,
                 prevState.gscore, Integer.MAX_VALUE, prevState.arrow, prevState.wumpus);
@@ -343,15 +342,16 @@ public class SearchAI extends Agent {
     }
 
     public void getGoldPosition(World.Tile[][] board, LinkedList<Integer> goldPosition) {
-        for(int i=0; i<board[0].length; i++) {
-            for(int j=0; j<board[1].length; j++) {
+        for(int i=0; i<board.length; i++) {
+            for(int j=0; j<board[0].length; j++) {
                 if(board[i][j].getGold()) {
                     goldPosition.add(i);
                     goldPosition.add(j);
+                    break;
                 }
-
             }
         }
+
     }
 
     // Calculate Manhattan distance from current position to gold and back to 0,0
@@ -396,7 +396,7 @@ public class SearchAI extends Agent {
         }
 
         stateCode = Integer.toString(state.positionX) + Integer.toString(state.positionY) + g + state.direction + a + w;
-        System.out.println(stateCode);
+        //System.out.println(stateCode);
 
         return stateCode;
 
