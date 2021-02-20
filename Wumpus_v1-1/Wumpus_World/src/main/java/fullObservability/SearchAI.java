@@ -92,7 +92,7 @@ public class SearchAI extends Agent {
 
         //System.out.println("Initial state score:" + score.get(initialState));
 
-        goalState = new State(0, 0, true, 5, 10, 0, true, true);
+        //goalState = new State(0, 0, true, 5, 10, 0, true, true);
 
 
         //System.out.println("Getting to the main loop");
@@ -136,6 +136,7 @@ public class SearchAI extends Agent {
                 if (newState.tscore > 1000) {
                     continue;
                 }
+                // Case where state has not been reached before
                 String newStateStr = getStringFromState(newState);
                 if (!strState.containsKey(newStateStr)) {
                     frontier.add(newState);
@@ -146,6 +147,7 @@ public class SearchAI extends Agent {
                     strCode = getStringFromState(newState);
                     strState.put(strCode, newState);
                 } else {
+                    // Case where state has been reached and the score is better
                     State tmpState = strState.get(strCode);
                     if (newState.tscore < score.get(tmpState) ) {
                         frontier.add(newState);
@@ -334,7 +336,6 @@ public class SearchAI extends Agent {
                         return false;
                     }
                 }
-
             }
         }
 
