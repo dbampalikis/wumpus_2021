@@ -1,11 +1,13 @@
 package partialObservability;
-import fullObservability.SearchAI;
 import org.tweetyproject.logics.pl.reasoner.*;
 import org.tweetyproject.logics.pl.syntax.*;
 import org.tweetyproject.logics.pl.parser.*;
 import wumpus.Agent;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class MyAI extends Agent
 {
@@ -135,60 +137,131 @@ public class MyAI extends Agent
 
 */
 
-
-		PlBeliefSet bs = new PlBeliefSet();
-		PlParser plParser = new PlParser();
-
-		// [1,1]
-		bs.add((PlFormula) new Negation(new Proposition ("P11"))); // r1
-		bs.add((PlFormula) new Negation(new Proposition ("B11"))); // r4
-
-
 		try {
-			// PlFormula f = plParser.parseFormula("(B11 => (P12 || P21)) && ((P12 || P21) => B11)"); // r2
+
+			ArrayList<String> safeTiles = new ArrayList<String>();
+			PlBeliefSet bs = new PlBeliefSet();
+			PlParser plParser = new PlParser();
+			AbstractPlReasoner r = new SimplePlReasoner();
+			Proposition question;
+			boolean answer;
+
+			// [1,1] ---------------------------------------------------------------------------------------------------
+			System.out.println("\n[1,1]");
+			safeTiles.add("11");
+			bs.add((PlFormula) new Negation(new Proposition ("P11"))); // r1
+			bs.add((PlFormula) new Negation(new Proposition ("B11"))); // r4
+
 			PlFormula f = plParser.parseFormula("B11 <=> (P12 || P21)"); // r2
 			bs.add(f);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 
-		// Should be enough to derive !P12.
-		System.out.println(bs);
+			// Should be enough to derive !P12.
+			System.out.println("KB in [1,1]: " + bs);
+			question = new  Proposition("P12");
+			answer = r.query(bs, (PlFormula) question);
+			System.out.println("Is P12 true? " + answer);
 
-		AbstractPlReasoner r = new SimplePlReasoner();
-		Proposition question = new  Proposition("P12");
-		System.out.println("Is P12 true? " + r.query(bs, (PlFormula) question));
-		System.out.println("Is !P12 true? " + r.query(bs, (PlFormula) question.complement()));
+			if (answer) {
+				// There is a pit.
+				bs.add(question);
+			} else {
+				// There is no pit.
+				bs.add((PlFormula) question.complement());
+				// Add to safe directions.
+				safeTiles.add("12");
+			}
+
+			question = new  Proposition("P21");
+			answer = r.query(bs, (PlFormula) question);
+			System.out.println("Is P21 true? " + answer);
+
+			if (answer) {
+				// There is a pit.
+				bs.add(question);
+			} else {
+				// There is no pit.
+				bs.add((PlFormula) question.complement());
+				// Add to safe directions.
+				safeTiles.add("21");
+			}
+
+
+			System.out.println("KB after [1,1]: " + bs);
+			System.out.println("Safe tiles after [1,1]: " + safeTiles);
+
+
+			// [2,1] ---------------------------------------------------------------------------------------------------
+			System.out.println("\n[2,1]");
+			bs.add((PlFormula) new Proposition("B21")); // r5
+			f = plParser.parseFormula("B21 <=> (P31 || P22 || P11)"); // r3
+			bs.add(f);
+
+			System.out.println("KB in [1,1]: " + bs);
+			question = new  Proposition("P22");
+			answer = r.query(bs, (PlFormula) question);
+			System.out.println("Is P22 true? " + answer);
+
+			if (answer) {
+				// There is a pit.
+				bs.add(question);
+			} else {
+				// There is no pit.
+				bs.add((PlFormula) question.complement());
+				// Add to safe directions.
+				safeTiles.add("22");
+			}
+
+			question = new  Proposition("P31");
+			answer = r.query(bs, (PlFormula) question);
+			System.out.println("Is P31 true? " + answer);
+
+			if (answer) {
+				// There is a pit.
+				bs.add(question);
+			} else {
+				// There is no pit.
+				bs.add((PlFormula) question.complement());
+				// Add to safe directions.
+				safeTiles.add("31");
+			}
 
 
 
 
 /*
-		// [2,1]
-		bs.add((PlFormula) new Proposition("B21")); // r5
 
-		try {
-			PlFormula f = plParser.parseFormula("B21 <=> (P11 || P22 || P31)"); // r3
+
+			// [1,2]
+			bs.add((PlFormula) new Negation(new Proposition ("B12"))); // r11
+			f = plParser.parseFormula("B12 <=> (P11 || P22 || P13)"); // r12
 			bs.add(f);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 
-
-
-		// [1,2]
-		bs.add((PlFormula) new Proposition("!B12")); // r11
-
-		try {
-			PlFormula f = plParser.parseFormula("B12 <=> (P11 || P22 || P13)"); // r12
-			bs.add(f);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		// Should be enough to derive P22.
-
+			// Should be enough to derive P22.
+			System.out.println("In [2,1]");
+			System.out.println(bs);
+			question = new  Proposition("P22");
+			System.out.println("Is P22 true? " + r.query(bs, (PlFormula) question));
+			System.out.println("Is !P22 true? " + r.query(bs, (PlFormula) question.complement()));
 */
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+
+
+
+		/*
+		max_x = null
+		max_y = null
+		if (bump) {
+			// save the dimension we know now.
+		}
+		 */
+
+
+
+
 
 
 		// Figure out safe moves.
