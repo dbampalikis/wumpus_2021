@@ -49,6 +49,25 @@ public class MyAI extends Agent
 
 	}
 
+	boolean DEBUG = true;
+
+	public PlFormula MakeQuestion(String Letter, String XY) {
+		return new Negation(new Proposition(Letter + XY));
+	}
+
+	public boolean Ask(PlBeliefSet bs, PlFormula question) {
+
+		// Solver setup.
+		AbstractPlReasoner r = new SatReasoner();
+		SatSolver.setDefaultSolver(new Sat4jSolver());
+
+		// True if the second formula is entailed be the first formula.
+		boolean answer = r.query(bs, question);
+		if (DEBUG) System.out.println("Is " + question + " true? " + answer);
+
+		return answer;
+	}
+
 	public Action getAction
 	(
 		boolean stench,
@@ -58,209 +77,190 @@ public class MyAI extends Agent
 		boolean scream
 	)
 	{
-/*
-		//Manually create formulas and belief base
-		PlBeliefSet beliefSet = new PlBeliefSet();
-		Proposition f1 = new Proposition("a");
-		Negation f2 = new Negation(f1);
-		Conjunction c = new Conjunction();
-		c.add(f1, f2, new Proposition("b"));
-		Implication i = new Implication(f2, new Proposition("c"));
-		beliefSet.add(f1,f2,c,i);
-		System.out.println(beliefSet + "\n");
-
-		//Parse belief base from string
-		PlParser parser = new PlParser();
-		beliefSet = parser.parseBeliefBase("a || b || c \n !a || b \n !b || c \n !c || (!a && !b && !c && !d)");
-		System.out.println(beliefSet);
-
-		//Parse belief base from file
-		beliefSet = parser.parseBeliefBaseFromFile("src/main/resources/examplebeliefbase.proplogic");
-		System.out.println(beliefSet);
-
-		//Parse list of belief bases from file
-		List<PlBeliefSet> beliefSets = parser.parseListOfBeliefBasesFromFile("src/main/resources/examplebeliefbase_multiple.proplogic");
-		System.out.println(beliefSets);
-
-		//Parse list of belief bases using a custom delimiter
-		beliefSets = parser.parseListOfBeliefBases("a || b \n a && !a ##### c => d", "#####");
-		System.out.println(beliefSets);
-
-		//Note that belief bases can have signatures larger than their formulas' signature
-		PlSignature sig = beliefSet.getSignature();
-		sig.add(new Proposition("f"));
-		beliefSet.setSignature(sig);
-		System.out.println(beliefSet);
-		System.out.println("Minimal signature: " + beliefSet.getMinimalSignature());
-		//...but not smaller (commented out line throws exception)
-		sig.remove(new Proposition("a"));
-		//beliefSet2.setSignature(sig);
-
-		//Use simple inference reasoner
-		SimplePlReasoner reasoner = new SimplePlReasoner();
-		PlFormula query = new Negation(new Proposition("a"));
-
-		System.out.println("beliefSet: " + beliefSet);
-		System.out.println("query" + query);
-		Boolean answer1 = reasoner.query(beliefSet, query);
-		System.out.println("answer1" + answer1);
-
-*/
-
-		/*
-	    // KB: add the things we know.
-		String[] axioms = {"P00", "W00", "G00"};
-		PlBeliefSet bs = new PlBeliefSet();
-		for (String axiom : axioms) {
-			Proposition p = new Proposition(axiom);
-			bs.add((PlFormula) p.complement());
-		}
-
-		// KB: add the things we perceived.
-
-		// Stench
-
-		Proposition s = new Proposition("S00");
-		Proposition w1 = new Proposition("W10");
-		Proposition w2 = new Proposition("W01");
-		if (stench) {
-			bs.add((PlFormula) s); // stench in [0,0]
-			bs.add((PlFormula) w1.combineWithOr(w2)); // wumpus in either [0,1] or [1,0]
-		} else {
-			bs.add((PlFormula) s.complement()); // // no stench in [0,0]
-			bs.add((PlFormula) w1.complement().combineWithAnd(w2.complement())); // no wumpus in both [0,1] and [1,0]
-		}
-
-		System.out.println("bs: " + bs);
-
-		System.out.println("Percepts before the move: " + stench + " " + breeze + " " + glitter + " " + bump + " " + scream);
-		System.out.println("Map after the move:");
-
-*/
 
 		try {
 
 			ArrayList<String> safeTiles = new ArrayList<String>();
+			ArrayList<String> visitedTiles = new ArrayList<String>();
 			PlBeliefSet bs = new PlBeliefSet();
 			PlParser plParser = new PlParser();
-
-			AbstractPlReasoner r = new SatReasoner();
-			SatSolver.setDefaultSolver(new Sat4jSolver());
-
-			Proposition question;
+			PlFormula question;
 			boolean answer;
+			String Letter, XY;
+			int X, Y;
 
 
 			// Default knowledge ---------------------------------------------------------------------------------------
-			safeTiles.add("11");
+			XY = "11";
+			safeTiles.add(XY);
+			visitedTiles.add(XY);
 			bs.add((PlFormula) new Negation(new Proposition ("P11"))); // r1
-
-			// row 1
-			bs.add(plParser.parseFormula("B11 <=> (P12 || P21)"));
-			bs.add(plParser.parseFormula("B21 <=> (P11 || P22 || P31)")); // r3
-			bs.add(plParser.parseFormula("B31 <=> (P21 || P32 || P41)"));
-
-			// row 2
-			bs.add(plParser.parseFormula("B12 <=> (P13 || P22 || P11)"));
-			bs.add(plParser.parseFormula("B22 <=> (P12 || P23 || P32 || P21)"));
-			bs.add(plParser.parseFormula("B32 <=> (P22 || P33 || P42 || P31)"));
-
-			// row 3
-			bs.add(plParser.parseFormula("B13 <=> (P14 || P23 || P12)"));
-			bs.add(plParser.parseFormula("B23 <=> (P13 || P24 || P33 || P23)"));
-			bs.add(plParser.parseFormula("B33 <=> (P23 || P34 || P43 || P32)"));
 
 
 			// [1,1] ---------------------------------------------------------------------------------------------------
-			System.out.println("\n[1,1]");
-			bs.add((PlFormula) new Negation(new Proposition ("B11"))); // r4
+			X = 1; Y = 1;
+			if (DEBUG) System.out.println("\n[" + X + "," + Y + "]");
 
-			// Should be enough to derive !P12.
-			System.out.println("KB in [1,1]: " + bs);
-			question = new  Proposition("P12");
-			answer = r.query(bs, (PlFormula) question);
-			System.out.println("Is " + question + " true? " + answer);
+			bs.add((PlFormula) new Negation(new Proposition ("B" + X + Y))); // r4
+			bs.add(plParser.parseFormula("B11 <=> (P12 || P21)")); // r2
+			if (DEBUG) System.out.println("KB in [" + X + "," + Y + "]: " + bs);
 
+			// TODO: Q1
+			Letter = "P";
+			XY = "12";
+
+			question = MakeQuestion(Letter, XY);
+			answer = Ask(bs, question);
 			if (answer) {
-				// There is a pit.
+				// Add this to the KB.
 				bs.add(question);
-			} else {
-				// There is no pit.
-				bs.add((PlFormula) question.complement());
-				// Add to safe directions.
-				safeTiles.add("12");
+
+				// Add to safe tiles.
+				safeTiles.add(XY);
+				if (DEBUG) System.out.println("Tile " + XY + " is safe");
 			}
 
-			question = new  Proposition("P21");
-			answer = r.query(bs, (PlFormula) question);
-			System.out.println("Is " + question + " true? " + answer);
+			// TODO: Q2
+			Letter = "P";
+			XY = "21";
 
+			question = MakeQuestion(Letter, XY);
+			answer = Ask(bs, question);
 			if (answer) {
-				// There is a pit.
+				// Add this to the KB.
 				bs.add(question);
-			} else {
-				// There is no pit.
-				bs.add((PlFormula) question.complement());
-				// Add to safe directions.
-				safeTiles.add("21");
+
+				// Add to safe tiles.
+				safeTiles.add(XY);
+				if (DEBUG) System.out.println("Tile " + XY + " is safe");
 			}
-
-
-			System.out.println("KB after [1,1]: " + bs);
-			System.out.println("Safe tiles after [1,1]: " + safeTiles);
 
 
 			// [2,1] ---------------------------------------------------------------------------------------------------
-			System.out.println("\n[2,1]");
-			bs.add((PlFormula) new Proposition("B21")); // r5
+			X = 2; Y = 1;
+			if (DEBUG) System.out.println("\n[" + X + "," + Y + "]");
 
-			System.out.println("KB in [1,1]: " + bs);
-			question = new  Proposition("P22");
-			answer = r.query(bs, (PlFormula) question.complement());
-			System.out.println("Is !" + question + " true? " + answer);
+			bs.add((PlFormula) new Proposition("B" + X + Y)); // r5
+			bs.add(plParser.parseFormula("B21 <=> (P11 || P22 || P31)")); // ??????????
 
+			if (DEBUG) System.out.println("KB in [" + X + "," + Y + "]: " + bs);
+
+			// TODO: Q3
+			Letter = "P";
+			XY = "22";
+
+			question = MakeQuestion(Letter, XY);
+			answer = Ask(bs, question);
 			if (answer) {
-				// There is a pit.
+				// Add this to the KB.
 				bs.add(question);
-			} else {
-				// There is no pit.
-				bs.add((PlFormula) question.complement());
-				// Add to safe directions.
-				safeTiles.add("22");
+
+				// Add to safe tiles.
+				safeTiles.add(XY);
+				if (DEBUG) System.out.println("Tile " + XY + " is safe");
 			}
 
-			question = new  Proposition("P31");
-			answer = r.query(bs, (PlFormula) question.complement());
-			System.out.println("Is !" + question + " true? " + answer);
+			// TODO: Q4
+			Letter = "P";
+			XY = "31";
 
+			question = MakeQuestion(Letter, XY);
+			answer = Ask(bs, question);
 			if (answer) {
-				// There is a pit.
+				// Add this to the KB.
 				bs.add(question);
-			} else {
-				// There is no pit.
-				bs.add((PlFormula) question.complement());
-				// Add to safe directions.
-				safeTiles.add("31");
+
+				// Add to safe tiles.
+				safeTiles.add(XY);
+				if (DEBUG) System.out.println("Tile " + XY + " is safe");
 			}
 
 
+			// [1,2] ---------------------------------------------------------------------------------------------------
+			X = 1; Y = 2;
+			if (DEBUG) System.out.println("\n[" + X + "," + Y + "]");
+
+			bs.add((PlFormula) new Negation(new Proposition ("B" + X + Y))); // r11
+			bs.add(plParser.parseFormula("B12 <=> (P11 || P22 || P13)")); // r12
+			if (DEBUG) System.out.println("KB in [" + X + "," + Y + "]: " + bs);
+
+			// TODO: Q5
+			Letter = "P";
+			XY = "22";
+
+			question = MakeQuestion(Letter, XY);
+			answer = Ask(bs, question);
+			if (answer) {
+				// Add this to the KB.
+				bs.add(question);
+
+				// Add to safe tiles.
+				safeTiles.add(XY);
+				if (DEBUG) System.out.println("Tile " + XY + " is safe");
+			}
+
+			// TODO: Q6
+			Letter = "P";
+			XY = "13";
+
+			question = MakeQuestion(Letter, XY);
+			answer = Ask(bs, question);
+			if (answer) {
+				// Add this to the KB.
+				bs.add(question);
+
+				// Add to safe tiles.
+				safeTiles.add(XY);
+				if (DEBUG) System.out.println("Tile " + XY + " is safe");
+			}
+
+///*
+
+			// [2,2] ---------------------------------------------------------------------------------------------------
+			X = 2; Y = 2;
+			if (DEBUG) System.out.println("\n[" + X + "," + Y + "]");
+
+			bs.add((PlFormula) new Negation(new Proposition ("B" + X + Y)));
+			bs.add(plParser.parseFormula("B22 <=> (P12 || P23 || P32 || P21)"));
+			if (DEBUG) System.out.println("KB in [" + X + "," + Y + "]: " + bs);
+
+			// TODO: Q6
+			Letter = "P";
+			XY = "23";
+
+			question = MakeQuestion(Letter, XY);
+			answer = Ask(bs, question);
+			if (answer) {
+				// Add this to the KB.
+				bs.add(question);
+
+				// Add to safe tiles.
+				safeTiles.add(XY);
+				if (DEBUG) System.out.println("Tile " + XY + " is safe");
+			}
+
+			// TODO: Q7
+			Letter = "P";
+			XY = "32";
+
+			question = MakeQuestion(Letter, XY);
+			answer = Ask(bs, question);
+			if (answer) {
+				// Add this to the KB.
+				bs.add(question);
+
+				// Add to safe tiles.
+				safeTiles.add(XY);
+				if (DEBUG) System.out.println("Tile " + XY + " is safe");
+			}
+
+ //*/
 
 
-/*
+			if (DEBUG) System.out.println("Latest KB: " + bs);
+			if (DEBUG) System.out.println("Latest safe tiles: " + safeTiles);
 
 
-			// [1,2]
-			bs.add((PlFormula) new Negation(new Proposition ("B12"))); // r11
-			f = plParser.parseFormula("B12 <=> (P11 || P22 || P13)"); // r12
-			bs.add(f);
-
-			// Should be enough to derive P22.
-			System.out.println("In [2,1]");
-			System.out.println(bs);
-			question = new  Proposition("P22");
-			System.out.println("Is P22 true? " + r.query(bs, (PlFormula) question));
-			System.out.println("Is !P22 true? " + r.query(bs, (PlFormula) question.complement()));
-*/
 
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -279,10 +279,6 @@ public class MyAI extends Agent
 
 
 
-
-
-
-		// Figure out safe moves.
 
 		// Return a safe move with the lowest cost.
 		return Action.FORWARD;
