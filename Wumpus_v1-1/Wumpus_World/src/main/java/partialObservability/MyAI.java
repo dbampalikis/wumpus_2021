@@ -56,6 +56,55 @@ public class MyAI extends Agent
 	)
 	{
 
+/*
+		//Manually create formulas and belief base
+		PlBeliefSet beliefSet = new PlBeliefSet();
+		Proposition f1 = new Proposition("a");
+		Negation f2 = new Negation(f1);
+		Conjunction c = new Conjunction();
+		c.add(f1, f2, new Proposition("b"));
+		Implication i = new Implication(f2, new Proposition("c"));
+		beliefSet.add(f1,f2,c,i);
+		System.out.println(beliefSet + "\n");
+
+		//Parse belief base from string
+		PlParser parser = new PlParser();
+		beliefSet = parser.parseBeliefBase("a || b || c \n !a || b \n !b || c \n !c || (!a && !b && !c && !d)");
+		System.out.println(beliefSet);
+
+		//Parse belief base from file
+		beliefSet = parser.parseBeliefBaseFromFile("src/main/resources/examplebeliefbase.proplogic");
+		System.out.println(beliefSet);
+
+		//Parse list of belief bases from file
+		List<PlBeliefSet> beliefSets = parser.parseListOfBeliefBasesFromFile("src/main/resources/examplebeliefbase_multiple.proplogic");
+		System.out.println(beliefSets);
+
+		//Parse list of belief bases using a custom delimiter
+		beliefSets = parser.parseListOfBeliefBases("a || b \n a && !a ##### c => d", "#####");
+		System.out.println(beliefSets);
+
+		//Note that belief bases can have signatures larger than their formulas' signature
+		PlSignature sig = beliefSet.getSignature();
+		sig.add(new Proposition("f"));
+		beliefSet.setSignature(sig);
+		System.out.println(beliefSet);
+		System.out.println("Minimal signature: " + beliefSet.getMinimalSignature());
+		//...but not smaller (commented out line throws exception)
+		sig.remove(new Proposition("a"));
+		//beliefSet2.setSignature(sig);
+
+		//Use simple inference reasoner
+		SimplePlReasoner reasoner = new SimplePlReasoner();
+		PlFormula query = new Negation(new Proposition("a"));
+
+		System.out.println("beliefSet: " + beliefSet);
+		System.out.println("query" + query);
+		Boolean answer1 = reasoner.query(beliefSet, query);
+		System.out.println("answer1" + answer1);
+
+*/
+
 		/*
 	    // KB: add the things we know.
 		String[] axioms = {"P00", "W00", "G00"};
@@ -87,54 +136,52 @@ public class MyAI extends Agent
 
 */
 
+
 		PlBeliefSet bs = new PlBeliefSet();
 
-		// in [0,0]
-		Proposition p = new Proposition("B00");
-		bs.add((PlFormula) p.complement());
+		// [1,1]
+		bs.add((PlFormula) new Proposition("!P11")); // r1
+		bs.add((PlFormula) new Proposition("!B11")); // r4
 
 		PlParser plParser = new PlParser();
 		try {
-			PlFormula f = plParser.parseFormula("!P00 && !P10 && !P01");
+			PlFormula f = plParser.parseFormula("B11 <=> (P12 || P21)"); // r2
 			bs.add(f);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
-		// move right - in [1,0]
-		p = new Proposition("B01");
-		bs.add((PlFormula) p);
-
-		try {
-			PlFormula f = plParser.parseFormula("P20 || P11 || (P20 && P11)");
-			bs.add(f);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		// go back and move up - in [0,1]
-		p = new Proposition("B10");
-		bs.add((PlFormula) p.complement()); // no breeze in [0,1]
-
-		try {
-			PlFormula f = plParser.parseFormula("!P20 && !P11");
-			bs.add(f);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
+		// Should be enough to derive !P12.
 		System.out.println(bs);
+		SimplePlReasoner r = new SimplePlReasoner();
+		System.out.println(r.query(bs, new Proposition("!P11")));
 
-		// this should be enough to figure out that
-		// there is a pit in [2,0] - p4
-		// there is no pit in [1,1] - p5
 
-		AbstractPlReasoner r = new SatReasoner();
+		// [2,1]
+		bs.add((PlFormula) new Proposition("B21")); // r5
 
-		/*
-		p = new Proposition("P11");
-		System.out.println(r.query(bs, p)); // true
-		*/
+		try {
+			PlFormula f = plParser.parseFormula("B21 <=> (P11 || P22 || P31)"); // r3
+			bs.add(f);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+
+
+		// [1,2]
+		bs.add((PlFormula) new Proposition("!B12")); // r11
+
+		try {
+			PlFormula f = plParser.parseFormula("B12 <=> (P11 || P22 || P13)"); // r12
+			bs.add(f);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		// Should be enough to derive P22.
+
+
 
 
 		// Figure out safe moves.
