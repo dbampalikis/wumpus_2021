@@ -55,7 +55,6 @@ public class MyAI extends Agent
 		boolean scream
 	)
 	{
-
 /*
 		//Manually create formulas and belief base
 		PlBeliefSet beliefSet = new PlBeliefSet();
@@ -138,13 +137,15 @@ public class MyAI extends Agent
 
 
 		PlBeliefSet bs = new PlBeliefSet();
+		PlParser plParser = new PlParser();
 
 		// [1,1]
-		bs.add((PlFormula) new Proposition("!P11")); // r1
-		bs.add((PlFormula) new Proposition("!B11")); // r4
+		bs.add((PlFormula) new Negation(new Proposition ("P11"))); // r1
+		bs.add((PlFormula) new Negation(new Proposition ("B11"))); // r4
 
-		PlParser plParser = new PlParser();
+
 		try {
+			// PlFormula f = plParser.parseFormula("(B11 => (P12 || P21)) && ((P12 || P21) => B11)"); // r2
 			PlFormula f = plParser.parseFormula("B11 <=> (P12 || P21)"); // r2
 			bs.add(f);
 		} catch (IOException e) {
@@ -153,10 +154,16 @@ public class MyAI extends Agent
 
 		// Should be enough to derive !P12.
 		System.out.println(bs);
-		SimplePlReasoner r = new SimplePlReasoner();
-		System.out.println(r.query(bs, new Proposition("!P11")));
+
+		AbstractPlReasoner r = new SimplePlReasoner();
+		Proposition question = new  Proposition("P12");
+		System.out.println("Is P12 true? " + r.query(bs, (PlFormula) question));
+		System.out.println("Is !P12 true? " + r.query(bs, (PlFormula) question.complement()));
 
 
+
+
+/*
 		// [2,1]
 		bs.add((PlFormula) new Proposition("B21")); // r5
 
@@ -181,7 +188,7 @@ public class MyAI extends Agent
 
 		// Should be enough to derive P22.
 
-
+*/
 
 
 		// Figure out safe moves.
