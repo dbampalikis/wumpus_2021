@@ -86,177 +86,163 @@ public class MyAI extends Agent
 			PlParser plParser = new PlParser();
 			PlFormula question;
 			boolean answer;
-			String Letter, XY;
+			String[] Letters;
+			String[] Coordinates;
 			int X, Y;
 
 
 			// Default knowledge ---------------------------------------------------------------------------------------
-			XY = "11";
-			safeTiles.add(XY);
-			visitedTiles.add(XY);
-			bs.add((PlFormula) new Negation(new Proposition ("P11"))); // r1
+			safeTiles.add("11");
+			bs.add((PlFormula) new Negation(new Proposition ("P11")));
 
 
 			// [1,1] ---------------------------------------------------------------------------------------------------
 			X = 1; Y = 1;
 			if (DEBUG) System.out.println("\n[" + X + "," + Y + "]");
+			visitedTiles.add("" + X + Y);
 
-			bs.add((PlFormula) new Negation(new Proposition ("B" + X + Y))); // r4
-			bs.add(plParser.parseFormula("B11 <=> (P12 || P21)")); // r2
+
+			Proposition b = new Proposition("B" + X + Y);
+			if (breeze) {
+				bs.add(b);
+			} else {
+				bs.add((PlFormula) b.complement());
+			}
+
+			// Figure out here that we have 2 tiles to inspect: P12, P21.
+			// Then add <=> to the KB.
+			// Then check each tile with questions.
+
+			bs.add(plParser.parseFormula("B11 <=> (P12 || P21)")); // Do be generated automatically.
 			if (DEBUG) System.out.println("KB in [" + X + "," + Y + "]: " + bs);
 
-			// TODO: Q1
-			Letter = "P";
-			XY = "12";
+			// Questions - answers.
+			Letters = new String[]{"P"};
+			Coordinates = new String[]{"12", "21"};
 
-			question = MakeQuestion(Letter, XY);
-			answer = Ask(bs, question);
-			if (answer) {
-				// Add this to the KB.
-				bs.add(question);
+			for (String l : Letters) {
+				for (String c : Coordinates) {
 
-				// Add to safe tiles.
-				safeTiles.add(XY);
-				if (DEBUG) System.out.println("Tile " + XY + " is safe");
+					question = MakeQuestion(l, c);
+					answer = Ask(bs, question);
+					if (answer) {
+						// Add this to the KB.
+						bs.add(question);
+
+						// Add to safe tiles.
+						safeTiles.add(c);
+						if (DEBUG) System.out.println("Tile " + c + " is safe");
+					}
+				}
 			}
 
-			// TODO: Q2
-			Letter = "P";
-			XY = "21";
-
-			question = MakeQuestion(Letter, XY);
-			answer = Ask(bs, question);
-			if (answer) {
-				// Add this to the KB.
-				bs.add(question);
-
-				// Add to safe tiles.
-				safeTiles.add(XY);
-				if (DEBUG) System.out.println("Tile " + XY + " is safe");
-			}
 
 
 			// [2,1] ---------------------------------------------------------------------------------------------------
 			X = 2; Y = 1;
 			if (DEBUG) System.out.println("\n[" + X + "," + Y + "]");
+			visitedTiles.add("" + X + Y);
 
-			bs.add((PlFormula) new Proposition("B" + X + Y)); // r5
-			bs.add(plParser.parseFormula("B21 <=> (P11 || P22 || P31)")); // ??????????
+			bs.add((PlFormula) new Proposition("B" + X + Y));
+			bs.add(plParser.parseFormula("B21 <=> (P11 || P22 || P31)")); // Do be generated automatically.
 
 			if (DEBUG) System.out.println("KB in [" + X + "," + Y + "]: " + bs);
 
-			// TODO: Q3
-			Letter = "P";
-			XY = "22";
+			// Questions - answers.
+			Letters = new String[]{"P"};
+			Coordinates = new String[]{"22", "31"};
 
-			question = MakeQuestion(Letter, XY);
-			answer = Ask(bs, question);
-			if (answer) {
-				// Add this to the KB.
-				bs.add(question);
+			for (String l : Letters) {
+				for (String c : Coordinates) {
 
-				// Add to safe tiles.
-				safeTiles.add(XY);
-				if (DEBUG) System.out.println("Tile " + XY + " is safe");
-			}
+					question = MakeQuestion(l, c);
+					answer = Ask(bs, question);
+					if (answer) {
+						// Add this to the KB.
+						bs.add(question);
 
-			// TODO: Q4
-			Letter = "P";
-			XY = "31";
-
-			question = MakeQuestion(Letter, XY);
-			answer = Ask(bs, question);
-			if (answer) {
-				// Add this to the KB.
-				bs.add(question);
-
-				// Add to safe tiles.
-				safeTiles.add(XY);
-				if (DEBUG) System.out.println("Tile " + XY + " is safe");
+						// Add to safe tiles.
+						safeTiles.add(c);
+						if (DEBUG) System.out.println("Tile " + c + " is safe");
+					}
+				}
 			}
 
 
 			// [1,2] ---------------------------------------------------------------------------------------------------
 			X = 1; Y = 2;
 			if (DEBUG) System.out.println("\n[" + X + "," + Y + "]");
+			visitedTiles.add("" + X + Y);
 
-			bs.add((PlFormula) new Negation(new Proposition ("B" + X + Y))); // r11
-			bs.add(plParser.parseFormula("B12 <=> (P11 || P22 || P13)")); // r12
+			bs.add((PlFormula) new Negation(new Proposition ("B" + X + Y)));
+			bs.add(plParser.parseFormula("B12 <=> (P11 || P22 || P13)")); // Do be generated automatically.
+
 			if (DEBUG) System.out.println("KB in [" + X + "," + Y + "]: " + bs);
 
-			// TODO: Q5
-			Letter = "P";
-			XY = "22";
+			// Questions - answers.
+			Letters = new String[]{"P"};
+			Coordinates = new String[]{"22", "13", "31"};
 
-			question = MakeQuestion(Letter, XY);
-			answer = Ask(bs, question);
-			if (answer) {
-				// Add this to the KB.
-				bs.add(question);
 
-				// Add to safe tiles.
-				safeTiles.add(XY);
-				if (DEBUG) System.out.println("Tile " + XY + " is safe");
+			/*
+
+			!!!!!!!!!!!! We should figure out here that 31 has a pit !!!!!!!!!!!!
+			 Most probably we just need to ask both questions: Pxy and !Pxy.
+			 Whichever returns `true` should be added to the KB.
+			 It means that the if-statement `if (answer)` needs to be changed.
+
+			*/
+
+			for (String l : Letters) {
+				for (String c : Coordinates) {
+
+					question = MakeQuestion(l, c);
+					answer = Ask(bs, question);
+					if (answer) {
+						// Add this to the KB.
+						bs.add(question);
+
+						// Add to safe tiles.
+						safeTiles.add(c);
+						if (DEBUG) System.out.println("Tile " + c + " is safe");
+					}
+				}
 			}
 
-			// TODO: Q6
-			Letter = "P";
-			XY = "13";
-
-			question = MakeQuestion(Letter, XY);
-			answer = Ask(bs, question);
-			if (answer) {
-				// Add this to the KB.
-				bs.add(question);
-
-				// Add to safe tiles.
-				safeTiles.add(XY);
-				if (DEBUG) System.out.println("Tile " + XY + " is safe");
-			}
-
-///*
 
 			// [2,2] ---------------------------------------------------------------------------------------------------
 			X = 2; Y = 2;
 			if (DEBUG) System.out.println("\n[" + X + "," + Y + "]");
+			visitedTiles.add("" + X + Y);
 
 			bs.add((PlFormula) new Negation(new Proposition ("B" + X + Y)));
 			bs.add(plParser.parseFormula("B22 <=> (P12 || P23 || P32 || P21)"));
+
 			if (DEBUG) System.out.println("KB in [" + X + "," + Y + "]: " + bs);
 
-			// TODO: Q6
-			Letter = "P";
-			XY = "23";
+			// Questions - answers.
+			Letters = new String[]{"P"};
+			Coordinates = new String[]{"23", "32"};
 
-			question = MakeQuestion(Letter, XY);
-			answer = Ask(bs, question);
-			if (answer) {
-				// Add this to the KB.
-				bs.add(question);
+			for (String l : Letters) {
+				for (String c : Coordinates) {
 
-				// Add to safe tiles.
-				safeTiles.add(XY);
-				if (DEBUG) System.out.println("Tile " + XY + " is safe");
+					question = MakeQuestion(l, c);
+					answer = Ask(bs, question);
+					if (answer) {
+						// Add this to the KB.
+						bs.add(question);
+
+						// Add to safe tiles.
+						safeTiles.add(c);
+						if (DEBUG) System.out.println("Tile " + c + " is safe");
+					}
+				}
 			}
 
-			// TODO: Q7
-			Letter = "P";
-			XY = "32";
-
-			question = MakeQuestion(Letter, XY);
-			answer = Ask(bs, question);
-			if (answer) {
-				// Add this to the KB.
-				bs.add(question);
-
-				// Add to safe tiles.
-				safeTiles.add(XY);
-				if (DEBUG) System.out.println("Tile " + XY + " is safe");
-			}
-
- //*/
 
 
+			if (DEBUG) System.out.println("Visited tiles: " + visitedTiles);
 			if (DEBUG) System.out.println("Latest KB: " + bs);
 			if (DEBUG) System.out.println("Latest safe tiles: " + safeTiles);
 
