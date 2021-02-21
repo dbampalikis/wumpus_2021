@@ -1,5 +1,6 @@
 package partialObservability;
 import org.tweetyproject.logics.pl.reasoner.*;
+import org.tweetyproject.logics.pl.sat.*;
 import org.tweetyproject.logics.pl.syntax.*;
 import org.tweetyproject.logics.pl.parser.*;
 import wumpus.Agent;
@@ -142,24 +143,43 @@ public class MyAI extends Agent
 			ArrayList<String> safeTiles = new ArrayList<String>();
 			PlBeliefSet bs = new PlBeliefSet();
 			PlParser plParser = new PlParser();
-			AbstractPlReasoner r = new SimplePlReasoner();
+
+			AbstractPlReasoner r = new SatReasoner();
+			SatSolver.setDefaultSolver(new Sat4jSolver());
+
 			Proposition question;
 			boolean answer;
 
-			// [1,1] ---------------------------------------------------------------------------------------------------
-			System.out.println("\n[1,1]");
+
+			// Default knowledge ---------------------------------------------------------------------------------------
 			safeTiles.add("11");
 			bs.add((PlFormula) new Negation(new Proposition ("P11"))); // r1
-			bs.add((PlFormula) new Negation(new Proposition ("B11"))); // r4
 
-			PlFormula f = plParser.parseFormula("B11 <=> (P12 || P21)"); // r2
-			bs.add(f);
+			// row 1
+			bs.add(plParser.parseFormula("B11 <=> (P12 || P21)"));
+			bs.add(plParser.parseFormula("B21 <=> (P11 || P22 || P31)")); // r3
+			bs.add(plParser.parseFormula("B31 <=> (P21 || P32 || P41)"));
+
+			// row 2
+			bs.add(plParser.parseFormula("B12 <=> (P13 || P22 || P11)"));
+			bs.add(plParser.parseFormula("B22 <=> (P12 || P23 || P32 || P21)"));
+			bs.add(plParser.parseFormula("B32 <=> (P22 || P33 || P42 || P31)"));
+
+			// row 3
+			bs.add(plParser.parseFormula("B13 <=> (P14 || P23 || P12)"));
+			bs.add(plParser.parseFormula("B23 <=> (P13 || P24 || P33 || P23)"));
+			bs.add(plParser.parseFormula("B33 <=> (P23 || P34 || P43 || P32)"));
+
+
+			// [1,1] ---------------------------------------------------------------------------------------------------
+			System.out.println("\n[1,1]");
+			bs.add((PlFormula) new Negation(new Proposition ("B11"))); // r4
 
 			// Should be enough to derive !P12.
 			System.out.println("KB in [1,1]: " + bs);
 			question = new  Proposition("P12");
 			answer = r.query(bs, (PlFormula) question);
-			System.out.println("Is P12 true? " + answer);
+			System.out.println("Is " + question + " true? " + answer);
 
 			if (answer) {
 				// There is a pit.
@@ -173,7 +193,7 @@ public class MyAI extends Agent
 
 			question = new  Proposition("P21");
 			answer = r.query(bs, (PlFormula) question);
-			System.out.println("Is P21 true? " + answer);
+			System.out.println("Is " + question + " true? " + answer);
 
 			if (answer) {
 				// There is a pit.
@@ -193,13 +213,11 @@ public class MyAI extends Agent
 			// [2,1] ---------------------------------------------------------------------------------------------------
 			System.out.println("\n[2,1]");
 			bs.add((PlFormula) new Proposition("B21")); // r5
-			f = plParser.parseFormula("B21 <=> (P31 || P22 || P11)"); // r3
-			bs.add(f);
 
 			System.out.println("KB in [1,1]: " + bs);
 			question = new  Proposition("P22");
-			answer = r.query(bs, (PlFormula) question);
-			System.out.println("Is P22 true? " + answer);
+			answer = r.query(bs, (PlFormula) question.complement());
+			System.out.println("Is !" + question + " true? " + answer);
 
 			if (answer) {
 				// There is a pit.
@@ -212,8 +230,8 @@ public class MyAI extends Agent
 			}
 
 			question = new  Proposition("P31");
-			answer = r.query(bs, (PlFormula) question);
-			System.out.println("Is P31 true? " + answer);
+			answer = r.query(bs, (PlFormula) question.complement());
+			System.out.println("Is !" + question + " true? " + answer);
 
 			if (answer) {
 				// There is a pit.
