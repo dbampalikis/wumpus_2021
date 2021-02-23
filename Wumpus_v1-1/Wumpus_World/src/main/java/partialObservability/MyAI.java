@@ -138,6 +138,7 @@ public class MyAI extends Agent
 			safeTiles.add("00");
 			bs.add((PlFormula) new Negation(new Proposition ("P00")));
 
+
 			// Update visited tiles.
 			visitedTiles.add("" + currentState.positionX + currentState.positionY);
 			if (DEBUG) System.out.println("\n[" + currentState.positionX + "," + currentState.positionY + "]");
@@ -167,8 +168,6 @@ public class MyAI extends Agent
 			if (scream) {
 				// Remove Wxy.
 				// Add !Wxy.
-			} else {
-				if (DEBUG) System.out.println("\n!!! MISS\n");
 			}
 
 			// Bump
@@ -251,6 +250,36 @@ public class MyAI extends Agent
 					// TODO: SearchAI - plan climbing out.
 				}
 			}
+
+
+
+
+
+
+			// ----------------------------------------------------------------------------------
+			// if plan is empty and ASK(KB, HaveArrowt) = true then
+			//     possible wumpus ← {[x, y] : ASK(KB,¬ Wx,y) = false}
+			//     plan ← PLAN-SHOT(current, possible wumpus, safe)
+			// ----------------------------------------------------------------------------------
+
+
+			// ----------------------------------------------------------------------------------
+			// if plan is empty then ...
+			// ----------------------------------------------------------------------------------
+
+			/*if (plan.size() > 0) {
+				// Plan is NOT empty - continue implementing the plan.
+				return plan.pop();
+			} else {
+				// Plan is empty.
+				if (!safeTiles.isEmpty()) {
+					// There are tiles to explore.
+					// TODO: SearchAI
+				} else {
+					// There are no tiles to explore and gold has not been found
+					// TODO: SearchAI - plan climbing out.
+				}
+			}*/
 
 
 
