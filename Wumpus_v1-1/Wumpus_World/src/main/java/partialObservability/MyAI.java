@@ -137,6 +137,7 @@ public class MyAI extends Agent
 			currentState = new SearchAI.State(0, 0, false, 0, 0, Integer.MAX_VALUE, true, true);
 			safeTiles.add("00");
 			bs.add((PlFormula) new Negation(new Proposition ("P00")));
+			bs.add((PlFormula) new Negation(new Proposition ("W00")));
 
 			// Update visited tiles.
 			visitedTiles.add("" + currentState.positionX + currentState.positionY);
