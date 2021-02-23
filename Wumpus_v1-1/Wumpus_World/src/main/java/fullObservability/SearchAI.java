@@ -7,17 +7,15 @@ import java.util.*;
 
 
 public class SearchAI extends Agent {
-    public class State {
-        int positionX;
-        int positionY;
-        boolean gold;
-        int direction; // The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
-        int gscore;
-        int tscore;
-        boolean arrow;
-        boolean wumpus;
-        //State parent;
-        //Action action;
+    public static class State {
+        public int positionX;
+        public int positionY;
+        public boolean gold;
+        public int direction; // The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
+        public int gscore;
+        public int tscore;
+        public boolean arrow;
+        public boolean wumpus;
 
         public State(int positionX, int positionY, boolean gold_retrieved, int direction, int gscore, int tscore, boolean arrow, boolean wumpus) {
             this.positionX = positionX;
@@ -28,38 +26,32 @@ public class SearchAI extends Agent {
             this.tscore = tscore;
             this.arrow = arrow;
             this.wumpus = wumpus;
-            //this.parent = parent;
-            //this.action = action;
         }
     }
 
     private ListIterator<Action> planIterator;
 
+    // Implements the method to calculate which element should
+    // be removed from the priority list. Compares the scores
+    // of the states and removes the one with the smallest
+    public Comparator<State> stateComparator = new Comparator<>() {
+        @Override
+        public int compare(State state1, State state2) {
+            return state1.tscore - state2.tscore;
+        }
+    };
+
 
     public SearchAI(World.Tile[][] board) {
 
-        // Implements the method to calculate which element should
-        // be removed from the priority list. Compares the scores
-        // of the states and removes the one with the smallest
-        Comparator<State> stateComparator = new Comparator<>() {
-            @Override
-            public int compare(State state1, State state2) {
-                return state1.tscore - state2.tscore;
-            }
-        };
+
         Scanner in = new Scanner(System.in);
 
         // Data structure for action plan to be returned
         LinkedList<Action> plan;
         plan = new LinkedList<Action>();
 
-        PriorityQueue<State> frontier = new PriorityQueue<>(stateComparator);
-        Map<State, State> parent = new HashMap<>();
-        Map<State, Integer> score = new HashMap<>();
-        Map<State, Action> action = new HashMap<>();
-        // Connect string to state
-        Map<String, State> strState = new HashMap<>();
-        List<State> explored;
+
 
 
         // Figure out if the gold is reachable
@@ -80,10 +72,35 @@ public class SearchAI extends Agent {
         //System.out.println("Creating initial state");
         State initialState, newState, goalState, currentState;
         initialState = new State(0, 0, false, 0, 0, Integer.MAX_VALUE, true, true);
-        initialState.tscore = initialState.gscore + calculateManhattan(initialState, goldPosition);
+
+
+        plan = searchPath(initialState, goldPosition, board, true);
+
+        planIterator = plan.listIterator();
+    }
+
+    public LinkedList<Action> searchPath(State initialState, LinkedList<Integer> goldPosition, World.Tile[][] board,
+                                         boolean fullyObservable) {
+
+        State newState, currentState;
+        LinkedList<Action> plan;
+        plan = new LinkedList<Action>();
+
+        PriorityQueue<State> frontier = new PriorityQueue<>(stateComparator);
+        Map<State, State> parent = new HashMap<>();
+        Map<State, Integer> score = new HashMap<>();
+        Map<State, Action> action = new HashMap<>();
+        // Connect string to state
+        Map<String, State> strState = new HashMap<>();
+
+        if(fullyObservable) {
+            initialState.tscore = initialState.gscore + calculateManhattan(initialState, goldPosition);
+        }
+
         score.put(initialState, initialState.tscore);
         action.put(initialState, null);
         parent.put(initialState, null);
+
         frontier.add(initialState);
 
         String strCode = getStringFromState(initialState);
@@ -91,8 +108,6 @@ public class SearchAI extends Agent {
 
 
         //System.out.println("Initial state score:" + score.get(initialState));
-
-        //goalState = new State(0, 0, true, 5, 10, 0, true, true);
 
 
         //System.out.println("Getting to the main loop");
@@ -113,12 +128,6 @@ public class SearchAI extends Agent {
                 break;
             }
 
-            // TEST
-            /*System.out.print ( "Please input: " );
-            String userInput = in.next();*/
-            //System.out.println(parent);
-            //System.out.println(action);
-
             currentState = frontier.remove();
             if (!strState.containsKey(getStringFromState(currentState))) {
                 //System.out.println("Continue reached");
@@ -127,9 +136,6 @@ public class SearchAI extends Agent {
 
             //System.out.println("Priority queue size:" + frontier.size());
             //printState(currentState, "Current state ");
-            // TODO: Use the loop to iterate through all possible actions
-            // TODO: Probably need if statements for non possible actions
-            // eg climbing in a tile except for 0,0
             for (Action act: Action.values()) {
                 //System.out.println(act);
                 newState = getNextState(currentState, act, board, goldPosition);
@@ -163,13 +169,7 @@ public class SearchAI extends Agent {
 
             }
 
-            // Add the expanded state to the hash for closed
-            // and store parent and action taken
-
-
         }
-
-        // Backtrack on the hashmap in order to get the path
 
         //System.out.println("Score of potential next move: " + frontier.peek().tscore);
         // This must be the last instruction.
@@ -178,7 +178,8 @@ public class SearchAI extends Agent {
             //System.out.println("Score of the last move: " + frontier.peek().tscore);
             plan.add(Action.CLIMB);
         }
-        planIterator = plan.listIterator();
+
+        return plan;
     }
 
     public LinkedList getPath(State currentState, Map<State, State> parent, Map<State, Action> action) {
