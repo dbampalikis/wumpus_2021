@@ -72,18 +72,15 @@ public class MyAI extends Agent
 		}
 	}
 
-
-
+	LinkedList<Action> plan = new LinkedList<Action>(); // Action plan to be returned by SearchAI.
+	public static ArrayList<String> safeTiles = new ArrayList<String>(); // TODO: Do we need public static?
+	ArrayList<String> visitedTiles = new ArrayList<String>();
+	int numCol = -1;      // Real width of the world.
+	int numRow = -1;      // Real height of the world.
+	int maxCol = 1;       // Running width of the world.
+	int maxRow = 1;       // Running height of the world.
 	boolean DEBUG = true;
-	// Variables for the size of the board
-	int numCol = -1;
-	int numRow = -1;
-	int maxCol = 1;
-	int maxRow = 1;
 
-	public PlFormula MakeQuestion(String Letter, String XY) {
-		return new Negation(new Proposition(Letter + XY));
-	}
 
 	public boolean Ask(PlBeliefSet bs, String symbol) {
 
@@ -105,7 +102,7 @@ public class MyAI extends Agent
 		return answer;
 	}
 
-	public static ArrayList<String> safeTiles = new ArrayList<String>();
+
 
 	public Action getAction
 			(
@@ -119,43 +116,32 @@ public class MyAI extends Agent
 
 		try {
 
-
-			ArrayList<String> visitedTiles = new ArrayList<String>();
 			PlBeliefSet bs = new PlBeliefSet();
 			PlParser plParser = new PlParser();
 			PlFormula question;
 			boolean answer;
 			String[] symbols;
 			ArrayList<String> neighbors;
-			int X, Y;
-
-			System.out.println("Safe tiles!!!:" + safeTiles);
-			// Default knowledge ---------------------------------------------------------------------------------------
-			safeTiles.add("00");
-			bs.add((PlFormula) new Negation(new Proposition ("P00")));
 
 
-			// [1,1] ---------------------------------------------------------------------------------------------------
-			X = 0; Y = 0;
-			if (DEBUG) System.out.println("\n[" + X + "," + Y + "]");
-			visitedTiles.add("" + X + Y);
+			if (DEBUG) System.out.println("!!! Safe tiles:" + safeTiles);
 
+
+			// ----------------------------------------------------------------------------------
+			// TELL(KB, MAKE-PERCEPT-SENTENCE(percept, t))
+            // ----------------------------------------------------------------------------------
+
+			// TODO: Do this only once when we start.
 			// Define initial state
 			SearchAI.State currentState;
 			currentState = new SearchAI.State(0, 0, false, 0, 0, Integer.MAX_VALUE, true, true);
+			safeTiles.add("00");
+			bs.add((PlFormula) new Negation(new Proposition ("P00")));
 
+			// Update visited tiles.
+			visitedTiles.add("" + currentState.positionX + currentState.positionY);
+			if (DEBUG) System.out.println("\n[" + currentState.positionX + "," + currentState.positionY + "]");
 
-			// Check if the tile contains the gold
-			if(glitter) {
-				if(currentState.gold) {
-					// TODO: Call search AI to find optimal path
-					// TODO: Possibly store this to a global var and pick from that every time
-				} else {
-					return Action.GRAB;
-				}
-			}
-
-			// Make-percept-sentence
 			// Breeze
 			Proposition p = new Proposition("B" + currentState.positionX + currentState.positionY);
 			if (breeze) {
@@ -164,32 +150,32 @@ public class MyAI extends Agent
 				bs.add((PlFormula) p.complement());
 			}
 			bs.add(plParser.parseFormula(createDoubleImplication("B", currentState)));
-			System.out.println("BS:" + bs);
+			if (DEBUG) System.out.println("BS:" + bs);
 
 			// Stench
-			p = new Proposition("S" + X + Y);
+			p = new Proposition("S" + currentState.positionX + currentState.positionY);
 			if (stench) {
 				bs.add(p);
 			} else {
 				bs.add((PlFormula) p.complement());
 			}
 			bs.add(plParser.parseFormula(createDoubleImplication("S", currentState)));
-			System.out.println("BS:" + bs);
+			if (DEBUG) System.out.println("BS:" + bs);
 
 			// Scream
-			p = new Proposition("C" + X + Y);
+			// TODO: Replace Wxy with !Wxy because it is dead now.
 			if (scream) {
-				bs.add(p);
+				// Remove Wxy.
+				// Add !Wxy.
 			} else {
-				bs.add((PlFormula) p.complement());
+				if (DEBUG) System.out.println("\n!!! MISS\n");
 			}
 
 			// Bump
 			if (bump) {
-				bs.add(p);
-				// The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
-				// If there is no bump and the current position is bigger than the size of the map
+				// Update the dimension - global maximum.
 				switch(currentState.direction)
+				// The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
 				{
 					case 0:
 						numCol = currentState.positionX;
@@ -199,12 +185,16 @@ public class MyAI extends Agent
 						break;
 				}
 			} else {
-
-				bs.add((PlFormula) p.complement());
+				// No bump.
+				// TODO: Update maxCol or maxRow.
 			}
 
 
-			// Line safe <- {[x,y]: ASK(KB, OK) = true}
+
+			// ----------------------------------------------------------------------------------
+			// safe <- {[x,y]: ASK(KB, OK) = true}
+			// ----------------------------------------------------------------------------------
+
 			// Questions - answers.
 			symbols = new String[]{"P", "W", "!P", "!W"};
 			neighbors = getNeighbors(currentState);
@@ -228,7 +218,50 @@ public class MyAI extends Agent
 
 
 
+			// ----------------------------------------------------------------------------------
+			// if ASK(KB, Glittert) = true
+			//     then plan ← [Grab] + PLAN-ROUTE(current,{[1,1]}, safe) + [Climb]
+			// ----------------------------------------------------------------------------------
 
+			if(glitter) {
+				if(currentState.gold) {
+					// TODO: Call search AI to find optimal path
+					// TODO: Possibly store this to a global var and pick from that every time
+				} else {
+					return Action.GRAB;
+				}
+			}
+
+
+
+			// ----------------------------------------------------------------------------------
+			// if plan is empty then ...
+			// ----------------------------------------------------------------------------------
+
+			if (plan.size() > 0) {
+				// Plan is NOT empty - continue implementing the plan.
+				return plan.pop();
+			} else {
+				// Plan is empty.
+				if (!safeTiles.isEmpty()) {
+					// There are tiles to explore.
+					// TODO: SearchAI
+				} else {
+					// There are no tiles to explore and gold has not been found
+					// TODO: SearchAI - plan climbing out.
+				}
+			}
+
+
+
+
+
+
+			// ----------------------------------------------------------------------------------
+			// if plan is empty and ASK(KB, HaveArrowt) = true then
+			//     possible wumpus ← {[x, y] : ASK(KB,¬ Wx,y) = false}
+			//     plan ← PLAN-SHOT(current, possible wumpus, safe)
+			// ----------------------------------------------------------------------------------
 
 
 /*
@@ -443,7 +476,7 @@ public class MyAI extends Agent
 		return neighbors;
 	}
 
-	public World.Tile[][] createBoard() {
+	/*public World.Tile[][] createBoard() {
 		World.Tile[][] board = new World.Tile[numRow][numCol];
 
 
@@ -455,5 +488,5 @@ public class MyAI extends Agent
 		}
 
 		return
-	}
+	}*/
 }
