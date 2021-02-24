@@ -158,7 +158,6 @@ public class MyAI extends Agent
 			)
 	{
 
-
 		try {
 
 			// System.out.println();
@@ -179,8 +178,7 @@ public class MyAI extends Agent
 						break;
 				}
 
-				// Remove tiles outside of the world from the safe tiles.
-				
+
 
 				System.out.println("After BUMP: currentState.positionX = " + currentState.positionX);
 				System.out.println("After BUMP: currentState.positionY = " + currentState.positionY);
@@ -312,7 +310,8 @@ public class MyAI extends Agent
 				}
 			}
 
-
+			// Remove tiles outside of the world from the safe tiles.
+			removeOutsideTiles(safeTiles);
 
 			// ----------------------------------------------------------------------------------
 			// if ASK(KB, Glitter) = true
@@ -424,6 +423,23 @@ public class MyAI extends Agent
 		// Return a safe move with the lowest cost.
 		return nextAction;
 
+	}
+
+	private void removeOutsideTiles(ArrayList<String> safeTiles) {
+		System.out.println("About to remove tiles");
+
+		ArrayList<Integer> toRemove = new ArrayList<>();
+		for(int i=0; i<safeTiles.size(); i++) {
+			if(Integer.parseInt(safeTiles.get(i).substring(0, 1)) >= maxCol || Integer.parseInt(safeTiles.get(i).substring(1, 2)) >= maxRow) {
+				toRemove.add(i);
+			}
+		}
+		Collections.sort(toRemove, Collections.reverseOrder());
+		System.out.println(toRemove);
+
+		for(int element : toRemove) {
+			safeTiles.remove(element);
+		}
 	}
 
 
