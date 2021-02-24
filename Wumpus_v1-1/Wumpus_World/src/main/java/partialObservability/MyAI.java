@@ -88,6 +88,52 @@ public class MyAI extends Agent
 		return answer;
 	}
 
+	PlFormula generateWumpusDisjunction() {
+		String s = "W00";
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 4; j++) {
+				if (!(i == 0 && j == 0)) {
+					s = s + "||W" + i + j;
+				}
+			}
+		}
+		PlParser plParser = new PlParser();
+		PlFormula wumpusDisjunction = null;
+		try {
+			wumpusDisjunction = plParser.parseFormula(s);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return wumpusDisjunction;
+	}
+
+	PlBeliefSet generateBsWithPairsOfWumpusDisjunctions() {
+		PlBeliefSet tmpBs = new PlBeliefSet();
+		PlParser plParser = new PlParser();
+
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 4; j++) {
+				String s1 = "" + i + j;
+
+				for (int n = 0; n < 4; n++) {
+					for (int m = 0; m < 4; m++) {
+						String s2 = "" + n + m;
+						if (!s1.equals(s2)) {
+							try {
+								tmpBs.add(plParser.parseFormula("!W" + s1 + " || !W" + s2));
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return tmpBs;
+	}
+
+
 	public static Comparator<Position> positionComparator = new Comparator<>() {
 		@Override
 		public int compare(Position position1, Position position2) {
@@ -158,31 +204,9 @@ public class MyAI extends Agent
 				bs.add((PlFormula) new Negation(new Proposition ("P00")));
 				bs.add((PlFormula) new Negation(new Proposition ("W00")));
 				// There is at leat one wumpus: disjunction of all Wxy.
-				String s = "W00";
-				for (int i = 0; i < 4; i++) {
-					for (int j = 0; j < 4; j++) {
-						if (!(i == 0 && j == 0)) {
-							s = s + "||W" + i + j;
-						}
-					}
-				}
-				PlFormula wumpusDisjunction = plParser.parseFormula(s);
-				bs.add(wumpusDisjunction);
+				bs.add(generateWumpusDisjunction());
 				// There is at most one wumpus: disjunction of !Wxy pairs.
-				for (int i = 0; i < 4; i++) {
-					for (int j = 0; j < 4; j++) {
-						String s1 = "" + i + j;
-
-						for (int n = 0; n < 4; n++) {
-							for (int m = 0; m < 4; m++) {
-								String s2 = "" + n + m;
-								if (!s1.equals(s2)) {
-									bs.add(plParser.parseFormula("!W" + s1 + " || !W" + s2));
-								}
-							}
-						}
-					}
-				}
+				bs.addAll(generateBsWithPairsOfWumpusDisjunctions());
 			}
 
 
@@ -192,8 +216,6 @@ public class MyAI extends Agent
 			}
 			if (DEBUG) System.out.println("\n[" + currentState.positionX + "," + currentState.positionY + "]");
 
-			System.out.println("*** currentState.positionX = " + currentState.positionX);
-			System.out.println("*** currentState.positionY = " + currentState.positionY);
 
 			// Breeze
 			Proposition p = new Proposition("B" + currentState.positionX + currentState.positionY);
