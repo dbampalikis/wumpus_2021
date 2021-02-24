@@ -96,8 +96,8 @@ public class MyAI extends Agent
 	PlFormula generateWumpusDisjunction() {
 		String s = "W00";
 		// TODO: Replace 4 with 10.
-		for (int i = 0; i < 10; i++) {
-			for (int j = 0; j < 10; j++) {
+		for (int i = 0; i < maxCol; i++) {
+			for (int j = 0; j < maxRow; j++) {
 				if (!(i == 0 && j == 0)) {
 					s = s + "||W" + i + j;
 				}
@@ -118,13 +118,13 @@ public class MyAI extends Agent
 		PlParser plParser = new PlParser();
 
 		// TODO: Replace 4 with 10.
-		for (int i = 0; i < 10; i++) {
-			for (int j = 0; j < 10; j++) {
+		for (int i = 0; i < maxCol; i++) {
+			for (int j = 0; j < maxRow; j++) {
 				String s1 = "" + i + j;
 
 				// TODO: Replace 4 with 10.
-				for (int n = 0; n < 10; n++) {
-					for (int m = 0; m < 10; m++) {
+				for (int n = 0; n < maxCol; n++) {
+					for (int m = 0; m < maxRow; m++) {
 						String s2 = "" + n + m;
 						if (!s1.equals(s2)) {
 							try {
@@ -243,15 +243,17 @@ public class MyAI extends Agent
 
 
 			// Stench
-			p = new Proposition("S" + currentState.positionX + currentState.positionY);
-			if (stench && currentState.wumpus) {
-				bs.add(p);
-			} else {
-				bs.add((PlFormula) p.complement());
-			}
-			bs.add(plParser.parseFormula(createDoubleImplication("S", currentState)));
-			// if (DEBUG) System.out.println("BS:" + bs);
+			if(currentState.wumpus) {
+				p = new Proposition("S" + currentState.positionX + currentState.positionY);
+				if (stench) {
+					bs.add(p);
+				} else {
+					bs.add((PlFormula) p.complement());
+				}
 
+				bs.add(plParser.parseFormula(createDoubleImplication("S", currentState)));
+				// if (DEBUG) System.out.println("BS:" + bs);
+			}
 
 			// Scream - Remove the wumpus from the knowledge base
 			if (scream) {
@@ -282,8 +284,8 @@ public class MyAI extends Agent
 				}
 
 				// Add negations for wumpus in every tile
-				for (int i = 0; i < 10; i++) {
-					for (int j = 0; j < 10; j++) {
+				for (int i = 0; i < maxCol; i++) {
+					for (int j = 0; j < maxRow; j++) {
 						bs.add(plParser.parseFormula("!W" + i + j));
 					}
 				}
@@ -308,8 +310,8 @@ public class MyAI extends Agent
 				// System.out.println("in wumpusKnown");
 				System.out.println("!!!!!! Checking all tiles for safety !!!!!!");
 				// TODO: Replace 4 with 10.
-				for (int i = 0; i < 10; i++) {
-					for (int j = 0; j < 10; j++) {
+				for (int i = 0; i < maxCol; i++) {
+					for (int j = 0; j < maxRow; j++) {
 						neighbors.add("" + i + j);
 						checkAll = false;
 						checkedAll = true;
@@ -389,9 +391,9 @@ public class MyAI extends Agent
 
 						}
 					}
-				} else if (currentState.arrow) { // Case where the plan is to kill wumpus
-					if(!wumpusPosition.equals("")) {
-						if(Ask(bs, "!P" + wumpusPosition)) {
+				} else if (currentState.arrow && !wumpusPosition.equals("") && Ask(bs, "!P" + wumpusPosition)) { // Case where the plan is to kill wumpus
+//					if() {
+//						if() {
 							// TODO: Kill wumpus: Create list with tiles that have
 							// the same row or column as wumpusPosition among the safe tiles
 							// TODO:
@@ -414,8 +416,8 @@ public class MyAI extends Agent
 								Position currentPosition = new Position(tile, tmpPlan.size(), tmpPlan);
 								frontier.add(currentPosition);
 								if (DEBUG) System.out.println("Plan added");
-							}
-						}
+				//			}
+				//		}
 					}
 					// TODO: check which tiles have the same row number as the wumpus
 					// TODO: check which tiles have the same column as the wumpus
@@ -479,7 +481,30 @@ public class MyAI extends Agent
 			if (DEBUG) System.out.println("Plan: " + plan);
 			frontier.clear();
 		}
+		if(plan.size() == 0) {
+			tmpPlan.clear();
+			SearchAI.printState(currentState, "Final state: ");
+			/*tmpPlan = SearchAI.searchPath(currentState, fakeGoal, null, false, maxRow, maxCol, safeTiles);
+			tmpPlan.add(Action.CLIMB);
+			Position currentPosition = new Position(""+fakeGoal.get(0)+fakeGoal.get(1), tmpPlan.size(), tmpPlan);
+			frontier.add(currentPosition);
+			plan.clear();
+			plan.addAll(tmpPlan);*/
+			frontier.clear();
+			fakeGoal.clear();
+			fakeGoal.add(0);
+			fakeGoal.add(0);
+			tmpPlan = SearchAI.searchPath(currentState, fakeGoal, null, false, maxRow, maxCol, safeTiles);
+			tmpPlan.add(Action.CLIMB);
+			Position currentPosition = new Position(""+fakeGoal.get(0)+fakeGoal.get(1), tmpPlan.size(), tmpPlan);
+			frontier.add(currentPosition);
+			plan.clear();
+			plan.addAll(tmpPlan);
+			//plan.add(Action.CLIMB);
+			//tmpPlan = SearchAI.searchPath(currentState, fakeGoal, null, false, maxRow, maxCol, safeTiles);
+		}
 		Action nextAction = plan.pop();
+
 
 		currentState = SearchAI.getNextState(currentState, nextAction,null, fakeGoal, false, maxRow, maxCol, safeTiles);
 		if (DEBUG) SearchAI.printState(currentState, "The new state");
