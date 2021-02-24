@@ -64,7 +64,7 @@ public class MyAI extends Agent
 	int numRow = -1;      // Real height of the world.
 	int maxCol = 10;       // Running width of the world.
 	int maxRow = 10;       // Running height of the world.
-	boolean DEBUG = false;
+	boolean DEBUG = true;
 	PriorityQueue<Position> frontier = new PriorityQueue<>(positionComparator);
 	PlBeliefSet bs = new PlBeliefSet();
 
@@ -109,9 +109,36 @@ public class MyAI extends Agent
 
 		try {
 
+			// Bump
+			if (bump) {
+				// Update the dimension - global maximum.
+				switch(currentState.direction)
+				// The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
+				{
+					case 0:
+						currentState.positionX  = currentState.positionX - 1;
+						maxCol = currentState.positionX + 1;
+						break;
+					case 3:
+						currentState.positionY  = currentState.positionY - 1;
+						maxRow = currentState.positionY + 1;
+						break;
+				}
+				System.out.println("After BUMP: currentState.positionX = " + currentState.positionX);
+				System.out.println("After BUMP: currentState.positionY = " + currentState.positionY);
+				System.out.println("After BUMP: maxCol = " + maxCol);
+				System.out.println("After BUMP: maxRow = " + maxRow);
+			}
+
+
 			if (DEBUG) System.out.println("=============== New Round ===============");
 			if (DEBUG) SearchAI.printState(currentState, "Current state");
+			if (DEBUG) System.out.println("Safe tiles:" + safeTiles);
 
+			System.out.println("*** currentState.positionX = " + currentState.positionX);
+			System.out.println("*** currentState.positionY = " + currentState.positionY);
+			System.out.println("*** maxCol = " + maxCol);
+			System.out.println("*** maxRow = " + maxRow);
 
 			PlParser plParser = new PlParser();
 			PlFormula question;
@@ -120,16 +147,11 @@ public class MyAI extends Agent
 			ArrayList<String> neighbors;
 
 
-			if (DEBUG) System.out.println("!!! Safe tiles:" + safeTiles);
-
-
 			// ----------------------------------------------------------------------------------
 			// TELL(KB, MAKE-PERCEPT-SENTENCE(percept, t))
 			// ----------------------------------------------------------------------------------
 
-			// TODO: Do this only once when we start.
 			// Define initial state
-
 			if(!safeTiles.contains("00")) {
 				safeTiles.add("00");
 				// !P00 and !W00 are always true.
@@ -137,9 +159,9 @@ public class MyAI extends Agent
 				bs.add((PlFormula) new Negation(new Proposition ("W00")));
 				// There is at leat one wumpus: disjunction of all Wxy.
 				String s = "W00";
-				for (int i = 0; i < 10; i++) {
-					for (int j = 0; j < 10; j++) {
-						if (i != 0 && j != 0) {
+				for (int i = 0; i < 4; i++) {
+					for (int j = 0; j < 4; j++) {
+						if (!(i == 0 && j == 0)) {
 							s = s + "||W" + i + j;
 						}
 					}
@@ -147,12 +169,12 @@ public class MyAI extends Agent
 				PlFormula wumpusDisjunction = plParser.parseFormula(s);
 				bs.add(wumpusDisjunction);
 				// There is at most one wumpus: disjunction of !Wxy pairs.
-				for (int i = 0; i < 10; i++) {
-					for (int j = 0; j < 10; j++) {
+				for (int i = 0; i < 4; i++) {
+					for (int j = 0; j < 4; j++) {
 						String s1 = "" + i + j;
 
-						for (int n = 0; n < 10; n++) {
-							for (int m = 0; m < 10; m++) {
+						for (int n = 0; n < 4; n++) {
+							for (int m = 0; m < 4; m++) {
 								String s2 = "" + n + m;
 								if (!s1.equals(s2)) {
 									bs.add(plParser.parseFormula("!W" + s1 + " || !W" + s2));
@@ -163,15 +185,20 @@ public class MyAI extends Agent
 				}
 			}
 
+
 			// Update visited tiles.
 			if(!visitedTiles.contains("" + currentState.positionX + currentState.positionY)) {
 				visitedTiles.add("" + currentState.positionX + currentState.positionY);
 			}
 			if (DEBUG) System.out.println("\n[" + currentState.positionX + "," + currentState.positionY + "]");
 
+			System.out.println("*** currentState.positionX = " + currentState.positionX);
+			System.out.println("*** currentState.positionY = " + currentState.positionY);
+
 			// Breeze
 			Proposition p = new Proposition("B" + currentState.positionX + currentState.positionY);
 			if (breeze) {
+				System.out.println("!!! BREEZE");
 				bs.add(p);
 			} else {
 				bs.add((PlFormula) p.complement());
@@ -179,37 +206,28 @@ public class MyAI extends Agent
 			bs.add(plParser.parseFormula(createDoubleImplication("B", currentState)));
 			if (DEBUG) System.out.println("BS:" + bs);
 
+
 			// Stench
 			p = new Proposition("S" + currentState.positionX + currentState.positionY);
 			if (stench) {
+				System.out.println("!!! STENCH");
 				bs.add(p);
 			} else {
 				bs.add((PlFormula) p.complement());
 			}
 			bs.add(plParser.parseFormula(createDoubleImplication("S", currentState)));
-			if (DEBUG) System.out.println("BS:" + bs);
+			// if (DEBUG) System.out.println("BS:" + bs);
+
 
 			// Scream
 			// TODO: Replace Wxy with !Wxy because it is dead now.
 			if (scream) {
+				System.out.println("!!! SCREAM");
 				// Remove Wxy.
 				// Add !Wxy.
 			}
 
-			// Bump
-			if (bump) {
-				// Update the dimension - global maximum.
-				switch(currentState.direction)
-				// The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
-				{
-					case 0:
-						maxCol = currentState.positionX;
-						break;
-					case 3:
-						maxRow = currentState.positionY;
-						break;
-				}
-			}
+
 
 
 			// ----------------------------------------------------------------------------------
@@ -225,6 +243,24 @@ public class MyAI extends Agent
 
 					answer = Ask(bs, symbol+neighbor);
 					if (answer) {
+						if (symbol.equals("W")) {
+							System.out.println("!!! WUMPUS IS IN " + neighbor);
+							// TODO: Reconsider Wumpus' neighbours for safety.
+							// Create a global variable wumpusNeighbors - initially empty.
+							// In the code above replace with :
+							// neighbors = getNeighbors(currentState) + wumpusNeighbors;
+							// After we find wumpus - add its neighbors to wumpusNeighbors
+							// so that those tiles are reconsidered for safety.
+
+//							SearchAI.State wumpusState = new SearchAI.State(Integer.parseInt(neighbor.substring(0,1)), Integer.parseInt(neighbor.substring(1,2)), false, 0, 0, Integer.MAX_VALUE, true, true);
+//							ArrayList<String> wumpusNeighbors = getNeighbors(wumpusState);
+//							System.out.println("!!! WUMPUS NEIGHBOURS: " + wumpusNeighbors);
+
+							// TODO: Mark all non-Wumpus tiles as !Wxy. - probably unnecessary.
+
+
+
+						}
 						// Add this to the KB.
 						bs.add(plParser.parseFormula(symbol+neighbor));
 					}
@@ -266,9 +302,17 @@ public class MyAI extends Agent
 							goalPosition.add(Integer.parseInt(tile.substring(0, 1)));
 							goalPosition.add(Integer.parseInt(tile.substring(1, 2)));
 							tmpPlan = SearchAI.searchPath(currentState, goalPosition, null, false, maxRow, maxCol, safeTiles);
-							Position currentPosition = new Position(tile, tmpPlan.size(), tmpPlan);
-							frontier.add(currentPosition);
 							if (DEBUG) System.out.println("For tile " + tile + " the plan is " + tmpPlan);
+
+							if (tmpPlan.size() > 0) {
+								Position currentPosition = new Position(tile, tmpPlan.size(), tmpPlan);
+								frontier.add(currentPosition);
+								if (DEBUG) System.out.println("Plan added");
+							} else {
+								if (DEBUG) System.out.println("Plan NOT added");
+							}
+
+
 						}
 					}
 				} /*else if (currentState.arrow) { // Case where the plan is to kill wumpus
@@ -279,6 +323,7 @@ public class MyAI extends Agent
 					// Select one with smallest and add Action.SHOOT
 
 				}*/ else {
+					System.out.println("CRUSHING HERE???????????");
 					plan.clear();
 
 					tmpPlan = SearchAI.searchPath(currentState, fakeGoal, null, false, maxRow, maxCol, safeTiles);
