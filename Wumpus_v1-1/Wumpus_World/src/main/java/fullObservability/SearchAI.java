@@ -34,7 +34,7 @@ public class SearchAI extends Agent {
     // Implements the method to calculate which element should
     // be removed from the priority list. Compares the scores
     // of the states and removes the one with the smallest
-    public Comparator<State> stateComparator = new Comparator<>() {
+    public static Comparator<State> stateComparator = new Comparator<>() {
         @Override
         public int compare(State state1, State state2) {
             return state1.tscore - state2.tscore;
@@ -74,13 +74,13 @@ public class SearchAI extends Agent {
         initialState = new State(0, 0, false, 0, 0, Integer.MAX_VALUE, true, true);
 
 
-        plan = searchPath(initialState, goldPosition, board, true);
+        plan = searchPath(initialState, goldPosition, board, true, 0, 0, null);
 
         planIterator = plan.listIterator();
     }
 
-    public LinkedList<Action> searchPath(State initialState, LinkedList<Integer> goldPosition, World.Tile[][] board,
-                                         boolean fullyObservable) {
+    public static LinkedList<Action> searchPath(State initialState, LinkedList<Integer> goldPosition, World.Tile[][] board,
+                                         boolean fullyObservable, int maxRow, int maxCol, ArrayList<String> safeTiles) {
 
         State newState, currentState;
         LinkedList<Action> plan;
@@ -93,9 +93,9 @@ public class SearchAI extends Agent {
         // Connect string to state
         Map<String, State> strState = new HashMap<>();
 
-        if(fullyObservable) {
-            initialState.tscore = initialState.gscore + calculateManhattan(initialState, goldPosition);
-        }
+
+        initialState.tscore = initialState.gscore + calculateManhattan(initialState, goldPosition, fullyObservable);
+
 
         score.put(initialState, initialState.tscore);
         action.put(initialState, null);
@@ -117,10 +117,11 @@ public class SearchAI extends Agent {
 
 
             // The goal state: in position 0,0 while having the gold
-            if (frontier.peek().positionX == 0 && frontier.peek().positionY == 0 && frontier.peek().gold) {
+            if ((frontier.peek().positionX == 0 && frontier.peek().positionY == 0 && frontier.peek().gold && fullyObservable) ||
+                (frontier.peek().positionX == goldPosition.get(0) && frontier.peek().positionY == goldPosition.get(1) && !fullyObservable)){
                 //System.out.println("Found gold");
                 currentState = frontier.remove();
-                plan = getPath(currentState, parent, action);
+                plan = getPath(currentState, parent, action, fullyObservable);
                 //System.out.println("Final plan:");
                 //for(Action act : plan) System.out.print(act + " ");
                 //System.out.println();
@@ -138,7 +139,7 @@ public class SearchAI extends Agent {
             //printState(currentState, "Current state ");
             for (Action act: Action.values()) {
                 //System.out.println(act);
-                newState = getNextState(currentState, act, board, goldPosition);
+                newState = getNextState(currentState, act, board, goldPosition, fullyObservable, maxRow, maxCol, safeTiles);
                 if (newState.tscore > 1000) {
                     continue;
                 }
@@ -174,48 +175,35 @@ public class SearchAI extends Agent {
         //System.out.println("Score of potential next move: " + frontier.peek().tscore);
         // This must be the last instruction.
         if (frontier.isEmpty()) {
+
             System.out.println("Frontier was empty");
             //System.out.println("Score of the last move: " + frontier.peek().tscore);
-            plan.add(Action.CLIMB);
+            if(fullyObservable) {
+                plan.add(Action.CLIMB);
+            }
         }
 
         return plan;
     }
 
-    public LinkedList getPath(State currentState, Map<State, State> parent, Map<State, Action> action) {
-       /* Scanner in = new Scanner(System.in);
-        System.out.print ( "Please input: " );
-        String userInput = in.next();*/
 
-        //System.out.println("Path");
-        LinkedList<Action> reversePath;
-        reversePath = new LinkedList<>();
+    public static State getNextState(State prevState, Action action, World.Tile[][] board, LinkedList<Integer> goldPosition,
+                                     boolean fullyObservable, int maxRow, int maxCol, ArrayList<String> safeTiles) {
 
-        reversePath.add(Action.CLIMB);
-        State tmpState = currentState;
-        //printState(tmpState, "Path recon");
-
-        while(parent.get(tmpState) != null) {
-
-            reversePath.addFirst(action.get(tmpState));
-            tmpState = parent.get(tmpState);
+        int colDimension, rowDimension = 0;
+        if(fullyObservable) {
+            colDimension = board.length;
+            rowDimension = board[0].length;
+        } else {
+            colDimension = maxCol;
+            rowDimension = maxRow;
         }
-        return reversePath;
-    }
 
-    public State getNextState(State prevState, Action action, World.Tile[][] board, LinkedList<Integer> goldPosition) {
-
-
-        int colDimension = board.length;
-        int rowDimension = board[0].length;
 
         State currentState = new State(prevState.positionX, prevState.positionY, prevState.gold, prevState.direction,
                 prevState.gscore, Integer.MAX_VALUE, prevState.arrow, prevState.wumpus);
 
 
-
-        // TODO: Check if the state already exists and then if it has better score than the stored one
-        // TODO: If not, remove state, otherwise update hashmap
         switch ( action )
         {
             case TURN_LEFT:
@@ -241,70 +229,73 @@ public class SearchAI extends Agent {
                 ++currentState.gscore;
 
                 // Check if the new position is pit or wumpus
-                if ( board[currentState.positionX][currentState.positionY].getPit() || (board[currentState.positionX][currentState.positionY].getWumpus()
-                        && currentState.wumpus))
-                {
-                    currentState.gscore += 1000;
+                if(fullyObservable) {
+                    if (board[currentState.positionX][currentState.positionY].getPit() || (board[currentState.positionX][currentState.positionY].getWumpus()
+                            && currentState.wumpus)) {
+                        currentState.gscore += 1000;
+                    }
+                } else {
+                    if(!safeTiles.contains("" + currentState.positionX + currentState.positionY)) {
+                        currentState.gscore += 1000;
+                    }
                 }
                 break;
 
             case SHOOT:
-                if ( currentState.arrow )
-                {
-                    currentState.arrow = false;
-                    currentState.gscore += 11;
-                    if ( currentState.direction == 0 )
-                    {
-                        for ( int x = currentState.positionX; x < colDimension; ++x )
-                            if ( board[x][currentState.positionY].getWumpus() )
-                            {
-                                currentState.wumpus = false;
-                            }
-                    }
-                    else if ( currentState.direction == 1 )
-                    {
-                        for ( int y = currentState.positionY; y >= 0; --y )
-                            if ( board[currentState.positionX][y].getWumpus() )
-                            {
-                                currentState.wumpus = false;
-                            }
-                    }
-                    else if ( currentState.direction == 2 )
-                    {
-                        for ( int x = currentState.positionX; x >= 0; --x )
-                            if ( board[x][currentState.positionY].getWumpus() )
-                            {
-                                currentState.wumpus = false;
-                            }
-                    }
-                    else if ( currentState.direction == 3 )
-                    {
-                        for ( int y = currentState.positionY; y < rowDimension; ++y )
-                            if ( board[currentState.positionX][y].getWumpus() )
-                            {
-                                currentState.wumpus = false;
-                            }
+                if(fullyObservable) {
+                    if (currentState.arrow) {
+                        currentState.arrow = false;
+                        currentState.gscore += 11;
+                        if (currentState.direction == 0) {
+                            for (int x = currentState.positionX; x < colDimension; ++x)
+                                if (board[x][currentState.positionY].getWumpus()) {
+                                    currentState.wumpus = false;
+                                }
+                        } else if (currentState.direction == 1) {
+                            for (int y = currentState.positionY; y >= 0; --y)
+                                if (board[currentState.positionX][y].getWumpus()) {
+                                    currentState.wumpus = false;
+                                }
+                        } else if (currentState.direction == 2) {
+                            for (int x = currentState.positionX; x >= 0; --x)
+                                if (board[x][currentState.positionY].getWumpus()) {
+                                    currentState.wumpus = false;
+                                }
+                        } else if (currentState.direction == 3) {
+                            for (int y = currentState.positionY; y < rowDimension; ++y)
+                                if (board[currentState.positionX][y].getWumpus()) {
+                                    currentState.wumpus = false;
+                                }
+                        }
+                    } else {
+                        ++currentState.gscore;
                     }
                 } else {
-                    ++currentState.gscore;
+                    currentState.gscore += 1000;
                 }
                 break;
 
             case GRAB:
-                if ( board[currentState.positionX][currentState.positionY].getGold() )
-                {
-                    currentState.gold = true;
+                if(fullyObservable) {
+                    if (board[currentState.positionX][currentState.positionY].getGold()) {
+                        currentState.gold = true;
+                    }
+                    ++currentState.gscore;
+                } else {
+                    currentState.gscore += 1000;
                 }
-                ++currentState.gscore;
                 break;
 
             case CLIMB:
-                if ( currentState.positionX == 0 && currentState.positionY == 0 )
-                {
-                    if ( currentState.gold )
-                        currentState.gscore -= 1000;
+                if(fullyObservable) {
+                    if (currentState.positionX == 0 && currentState.positionY == 0) {
+                        if (currentState.gold)
+                            currentState.gscore -= 1000;
+                    }
+                    ++currentState.gscore;
+                } else {
+                    currentState.gscore += 1000;
                 }
-                ++currentState.gscore;
                 break;
         }
 
@@ -319,11 +310,36 @@ public class SearchAI extends Agent {
         }*/
 
         // Add Manhattan distance to score
-        currentState.tscore = currentState.gscore + calculateManhattan(currentState, goldPosition);
+        currentState.tscore = currentState.gscore + calculateManhattan(currentState, goldPosition, fullyObservable);
 
         return currentState;
 
     }
+
+    // Reverse the path to have the actions in the correct order
+    public static LinkedList getPath(State currentState, Map<State, State> parent, Map<State, Action> action, boolean fullyObservable) {
+       /* Scanner in = new Scanner(System.in);
+        System.out.print ( "Please input: " );
+        String userInput = in.next();*/
+
+        //System.out.println("Path");
+        LinkedList<Action> reversePath;
+        reversePath = new LinkedList<>();
+
+        if(fullyObservable) {
+            reversePath.add(Action.CLIMB);
+        }
+        State tmpState = currentState;
+        //printState(tmpState, "Path recon");
+
+        while(parent.get(tmpState) != null) {
+
+            reversePath.addFirst(action.get(tmpState));
+            tmpState = parent.get(tmpState);
+        }
+        return reversePath;
+    }
+
 
     // Returns if the gold is reachable
     // TODO: Are there more cases where we should climb out?
@@ -343,7 +359,7 @@ public class SearchAI extends Agent {
         return true;
     }
 
-    public void getGoldPosition(World.Tile[][] board, LinkedList<Integer> goldPosition) {
+    public static void getGoldPosition(World.Tile[][] board, LinkedList<Integer> goldPosition) {
         for(int i=0; i<board.length; i++) {
             for(int j=0; j<board[0].length; j++) {
                 if(board[i][j].getGold()) {
@@ -357,28 +373,32 @@ public class SearchAI extends Agent {
     }
 
     // Calculate Manhattan distance from current position to gold and back to 0,0
-    public int calculateManhattan(State state, LinkedList<Integer> goldPosition) {
+    public static int calculateManhattan(State state, LinkedList<Integer> goldPosition, boolean fullyObservable) {
 
         int distance;
-        if (!state.gold) {
-            int toGold = Math.abs(state.positionX - goldPosition.get(0)) + Math.abs(state.positionY - goldPosition.get(1));
-            int fromGold = Math.abs(0 - goldPosition.get(0)) + Math.abs(0 - goldPosition.get(1));
-            distance = toGold + fromGold;
+        if(fullyObservable) {
+            if (!state.gold) {
+                int toGold = Math.abs(state.positionX - goldPosition.get(0)) + Math.abs(state.positionY - goldPosition.get(1));
+                int fromGold = Math.abs(0 - goldPosition.get(0)) + Math.abs(0 - goldPosition.get(1));
+                distance = toGold + fromGold;
+            } else {
+                distance = Math.abs(state.positionX - 0) + Math.abs(state.positionY - 0);
+            }
         } else {
-            distance = Math.abs(state.positionX - 0) + Math.abs(state.positionY - 0);
+            distance = Math.abs(state.positionX - goldPosition.get(0)) + Math.abs(state.positionY - goldPosition.get(1));
         }
 
 
         return distance;
     }
 
-    public void printState(State state, String init) {
+    public static void printState(State state, String init) {
         System.out.println(init + "\t" + state.positionX + ",\t" + state.positionY + "\tgold: " + state.gold +
                 "\tdir " + state.direction + "\tgscore " + state.gscore +  "\ttscore " + state.tscore +
                 "\tarrow " + state.arrow + "\twumpus " + state.wumpus);
     }
 
-    public String getStringFromState(State state) {
+    public static String getStringFromState(State state) {
         String stateCode, g, a, w;
 
         if (!state.gold) {

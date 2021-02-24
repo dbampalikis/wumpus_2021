@@ -8,10 +8,7 @@ import wumpus.Agent;
 import wumpus.World;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 public class MyAI extends Agent
 {
@@ -46,41 +43,30 @@ public class MyAI extends Agent
 
 	}
 
-	public static class State {
-		public int positionX;
-		public int positionY;
-		public boolean gold;
-		public int direction; // The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
-		public int gscore;
+	public static int tscore;
+	public static class Position {
+		String tile;
 		public int tscore;
-		public boolean arrow;
-		public boolean wumpus;
-		public int maxRow;
-		public int maxCol;
+		LinkedList<Action> plan;
 
-		public State(int positionX, int positionY, boolean gold_retrieved, int direction, int gscore, int tscore, boolean arrow, boolean wumpus, int maxRow, int maxCol) {
-			this.positionX = positionX;
-			this.positionY = positionY;
-			this.gold = gold_retrieved;
-			this.direction = direction;
-			this.gscore = gscore;
+		public Position(String tile, int tscore, LinkedList<Action> plan) {
+			this.tile = tile;
+			this.plan = plan;
 			this.tscore = tscore;
-			this.arrow = arrow;
-			this.wumpus = wumpus;
-			this.maxRow = maxRow;
-			this.maxCol = maxCol;
 		}
 	}
-
-	LinkedList<Action> plan = new LinkedList<Action>(); // Action plan to be returned by SearchAI.
+	LinkedList<Integer> fakeGoal = new LinkedList<Integer>(){{ add(0); add(0); }};
+	public LinkedList<Action> plan = new LinkedList<Action>();
+	LinkedList<Action> tmpPlan = new LinkedList<Action>(); // Action plan to be returned by SearchAI.
 	public static ArrayList<String> safeTiles = new ArrayList<String>(); // TODO: Do we need public static?
 	ArrayList<String> visitedTiles = new ArrayList<String>();
 	int numCol = -1;      // Real width of the world.
 	int numRow = -1;      // Real height of the world.
-	int maxCol = 1;       // Running width of the world.
-	int maxRow = 1;       // Running height of the world.
+	int maxCol = 10;       // Running width of the world.
+	int maxRow = 10;       // Running height of the world.
 	boolean DEBUG = true;
-
+	PriorityQueue<Position> frontier = new PriorityQueue<>(positionComparator);
+	PlBeliefSet bs = new PlBeliefSet();
 
 	public boolean Ask(PlBeliefSet bs, String symbol) {
 
@@ -102,8 +88,14 @@ public class MyAI extends Agent
 		return answer;
 	}
 
+	public static Comparator<Position> positionComparator = new Comparator<>() {
+		@Override
+		public int compare(Position position1, Position position2) {
+			return position1.tscore - position2.tscore;
+		}
+	};
 
-
+	public SearchAI.State currentState = new SearchAI.State(0, 0, false, 0, 0, Integer.MAX_VALUE, true, true);
 	public Action getAction
 			(
 					boolean stench,
@@ -114,9 +106,13 @@ public class MyAI extends Agent
 			)
 	{
 
+
 		try {
 
-			PlBeliefSet bs = new PlBeliefSet();
+			System.out.println("=============== New Round ===============");
+			SearchAI.printState(currentState, "Current state");
+
+
 			PlParser plParser = new PlParser();
 			PlFormula question;
 			boolean answer;
@@ -129,18 +125,22 @@ public class MyAI extends Agent
 
 			// ----------------------------------------------------------------------------------
 			// TELL(KB, MAKE-PERCEPT-SENTENCE(percept, t))
-            // ----------------------------------------------------------------------------------
+			// ----------------------------------------------------------------------------------
 
 			// TODO: Do this only once when we start.
 			// Define initial state
-			SearchAI.State currentState;
-			currentState = new SearchAI.State(0, 0, false, 0, 0, Integer.MAX_VALUE, true, true);
-			safeTiles.add("00");
-			bs.add((PlFormula) new Negation(new Proposition ("P00")));
 
+			if(!safeTiles.contains("00")) {
+				safeTiles.add("00");
+			}
+
+			bs.add((PlFormula) new Negation(new Proposition ("P00")));
+			bs.add((PlFormula) new Negation(new Proposition ("W00")));
 
 			// Update visited tiles.
-			visitedTiles.add("" + currentState.positionX + currentState.positionY);
+			if(!visitedTiles.contains("" + currentState.positionX + currentState.positionY)) {
+				visitedTiles.add("" + currentState.positionX + currentState.positionY);
+			}
 			if (DEBUG) System.out.println("\n[" + currentState.positionX + "," + currentState.positionY + "]");
 
 			// Breeze
@@ -177,17 +177,13 @@ public class MyAI extends Agent
 				// The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
 				{
 					case 0:
-						numCol = currentState.positionX;
+						maxCol = currentState.positionX;
 						break;
 					case 3:
-						numRow = currentState.positionY;
+						maxRow = currentState.positionY;
 						break;
 				}
-			} else {
-				// No bump.
-				// TODO: Update maxCol or maxRow.
 			}
-
 
 
 			// ----------------------------------------------------------------------------------
@@ -210,24 +206,52 @@ public class MyAI extends Agent
 				answer = Ask(bs, "!P"+neighbor+"&&!W"+neighbor);
 				if (answer) {
 					// Add to safe tiles.
-					safeTiles.add(neighbor);
-					if (DEBUG) System.out.println("Tile " + neighbor + " is safe");
+					if(!safeTiles.contains(neighbor)) {
+						safeTiles.add(neighbor);
+						if (DEBUG) System.out.println("Tile " + neighbor + " is safe");
+					}
 				}
 			}
 
 
 
 			// ----------------------------------------------------------------------------------
-			// if ASK(KB, Glittert) = true
+			// if ASK(KB, Glitter) = true
 			//     then plan ← [Grab] + PLAN-ROUTE(current,{[1,1]}, safe) + [Climb]
 			// ----------------------------------------------------------------------------------
 
+			//
 			if(glitter) {
-				if(currentState.gold) {
-					// TODO: Call search AI to find optimal path
-					// TODO: Possibly store this to a global var and pick from that every time
+				plan.clear();
+
+				tmpPlan = SearchAI.searchPath(currentState, fakeGoal, null, false, maxRow, maxCol, safeTiles);
+				tmpPlan.addFirst(Action.GRAB);
+				tmpPlan.add(Action.CLIMB);
+				Position currentPosition = new Position(""+fakeGoal.get(0)+fakeGoal.get(1), tmpPlan.size(), tmpPlan);
+				frontier.add(currentPosition);
+
+			} else if(plan.size() == 0) {
+				if(safeTiles.size() != visitedTiles.size()) {
+					for (String tile : safeTiles) {
+						// If the tile has not been visited
+						if (!visitedTiles.contains(tile)) {
+							tscore = Integer.MAX_VALUE;
+							LinkedList<Integer> goalPosition = new LinkedList<>();
+							goalPosition.add(Integer.parseInt(tile.substring(0, 1)));
+							goalPosition.add(Integer.parseInt(tile.substring(1, 2)));
+							tmpPlan = SearchAI.searchPath(currentState, goalPosition, null, false, maxRow, maxCol, safeTiles);
+							Position currentPosition = new Position(tile, tmpPlan.size(), tmpPlan);
+							frontier.add(currentPosition);
+							System.out.println("For tile " + tile + " the plan is " + tmpPlan);
+						}
+					}
 				} else {
-					return Action.GRAB;
+					plan.clear();
+
+					tmpPlan = SearchAI.searchPath(currentState, fakeGoal, null, false, maxRow, maxCol, safeTiles);
+					tmpPlan.add(Action.CLIMB);
+					Position currentPosition = new Position(""+fakeGoal.get(0)+fakeGoal.get(1), tmpPlan.size(), tmpPlan);
+					frontier.add(currentPosition);
 				}
 			}
 
@@ -236,37 +260,6 @@ public class MyAI extends Agent
 			// ----------------------------------------------------------------------------------
 			// if plan is empty then ...
 			// ----------------------------------------------------------------------------------
-
-			if (plan.size() > 0) {
-				// Plan is NOT empty - continue implementing the plan.
-				return plan.pop();
-			} else {
-				// Plan is empty.
-				if (!safeTiles.isEmpty()) {
-					// There are tiles to explore.
-					// TODO: SearchAI
-				} else {
-					// There are no tiles to explore and gold has not been found
-					// TODO: SearchAI - plan climbing out.
-				}
-			}
-
-
-
-
-
-
-			// ----------------------------------------------------------------------------------
-			// if plan is empty and ASK(KB, HaveArrowt) = true then
-			//     possible wumpus ← {[x, y] : ASK(KB,¬ Wx,y) = false}
-			//     plan ← PLAN-SHOT(current, possible wumpus, safe)
-			// ----------------------------------------------------------------------------------
-
-
-			// ----------------------------------------------------------------------------------
-			// if plan is empty then ...
-			// ----------------------------------------------------------------------------------
-
 			/*if (plan.size() > 0) {
 				// Plan is NOT empty - continue implementing the plan.
 				return plan.pop();
@@ -275,14 +268,14 @@ public class MyAI extends Agent
 				if (!safeTiles.isEmpty()) {
 					// There are tiles to explore.
 					// TODO: SearchAI
+				} else if (WeKnowWhereTheWumpusIs && WeWantToKillIt) {
+					// There are no tiles to explore and we want to kill the wumpus.
+					// TODO: Kill the wumpus
 				} else {
-					// There are no tiles to explore and gold has not been found
+					// Nothing to explore and we don't intend to kill the wumpus => climb out
 					// TODO: SearchAI - plan climbing out.
 				}
 			}*/
-
-
-
 
 
 
@@ -291,142 +284,6 @@ public class MyAI extends Agent
 			//     possible wumpus ← {[x, y] : ASK(KB,¬ Wx,y) = false}
 			//     plan ← PLAN-SHOT(current, possible wumpus, safe)
 			// ----------------------------------------------------------------------------------
-
-
-/*
-
-			// Figure out here that we have 2 tiles to inspect: P12, P21.
-			// Then add <=> to the KB.
-			// Then check each tile with questions.
-
-			bs.add(plParser.parseFormula("B11 <=> (P12 || P21)")); // To be generated automatically.
-			if (DEBUG) System.out.println("KB in [" + X + "," + Y + "]: " + bs);
-
-			// Questions - answers.
-			Letters = new String[]{"P"};
-			Coordinates = new String[]{"12", "21"};
-
-			for (String l : Letters) {
-				for (String c : Coordinates) {
-
-					question = MakeQuestion(l, c);
-					answer = Ask(bs, question);
-					if (answer) {
-						// Add this to the KB.
-						bs.add(question);
-
-						// Add to safe tiles.
-						safeTiles.add(c);
-						if (DEBUG) System.out.println("Tile " + c + " is safe");
-					}
-				}
-			}
-
-
-
-			// [2,1] ---------------------------------------------------------------------------------------------------
-			X = 2; Y = 1;
-			if (DEBUG) System.out.println("\n[" + X + "," + Y + "]");
-			visitedTiles.add("" + X + Y);
-
-			bs.add((PlFormula) new Proposition("B" + X + Y));
-			bs.add(plParser.parseFormula("B21 <=> (P11 || P22 || P31)")); // Do be generated automatically.
-
-			if (DEBUG) System.out.println("KB in [" + X + "," + Y + "]: " + bs);
-
-			// Questions - answers.
-			Letters = new String[]{"P"};
-			Coordinates = new String[]{"22", "31"};
-
-			for (String l : Letters) {
-				for (String c : Coordinates) {
-
-					question = MakeQuestion(l, c);
-					answer = Ask(bs, question);
-					if (answer) {
-						// Add this to the KB.
-						bs.add(question);
-
-						// Add to safe tiles.
-						safeTiles.add(c);
-						if (DEBUG) System.out.println("Tile " + c + " is safe");
-					}
-				}
-			}
-
-
-			// [1,2] ---------------------------------------------------------------------------------------------------
-			X = 1; Y = 2;
-			if (DEBUG) System.out.println("\n[" + X + "," + Y + "]");
-			visitedTiles.add("" + X + Y);
-
-			bs.add((PlFormula) new Negation(new Proposition ("B" + X + Y)));
-			bs.add(plParser.parseFormula("B12 <=> (P11 || P22 || P13)")); // Do be generated automatically.
-
-			if (DEBUG) System.out.println("KB in [" + X + "," + Y + "]: " + bs);
-
-			// Questions - answers.
-			Letters = new String[]{"P"};
-			Coordinates = new String[]{"22", "13", "31"};
-
-
-			*/
-/*
-			!!!!!!!!!!!! We should figure out here that 31 has a pit !!!!!!!!!!!!
-			 Most probably we just need to ask both questions: Pxy and !Pxy.
-			 Whichever returns `true` should be added to the KB.
-			 It means that the if-statement `if (answer)` needs to be changed.
-			*//*
-
-
-			for (String l : Letters) {
-				for (String c : Coordinates) {
-
-					question = MakeQuestion(l, c);
-					answer = Ask(bs, question);
-					if (answer) {
-						// Add this to the KB.
-						bs.add(question);
-
-						// Add to safe tiles.
-						safeTiles.add(c);
-						if (DEBUG) System.out.println("Tile " + c + " is safe");
-					}
-				}
-			}
-
-
-			// [2,2] ---------------------------------------------------------------------------------------------------
-			X = 2; Y = 2;
-			if (DEBUG) System.out.println("\n[" + X + "," + Y + "]");
-			visitedTiles.add("" + X + Y);
-
-			bs.add((PlFormula) new Negation(new Proposition ("B" + X + Y)));
-			bs.add(plParser.parseFormula("B22 <=> (P12 || P23 || P32 || P21)"));
-
-			if (DEBUG) System.out.println("KB in [" + X + "," + Y + "]: " + bs);
-
-			// Questions - answers.
-			Letters = new String[]{"P"};
-			Coordinates = new String[]{"23", "32"};
-
-			for (String l : Letters) {
-				for (String c : Coordinates) {
-
-					question = MakeQuestion(l, c);
-					answer = Ask(bs, question);
-					if (answer) {
-						// Add this to the KB.
-						bs.add(question);
-
-						// Add to safe tiles.
-						safeTiles.add(c);
-						if (DEBUG) System.out.println("Tile " + c + " is safe");
-					}
-				}
-			}
-
-*/
 
 
 			if (DEBUG) System.out.println("Visited tiles: " + visitedTiles);
@@ -439,22 +296,18 @@ public class MyAI extends Agent
 			e.printStackTrace();
 		}
 
-
-
-
-		/*
-		max_x = null
-		max_y = null
-		if (bump) {
-			// save the dimension we know now.
+		if(!frontier.isEmpty()) {
+			plan = frontier.remove().plan;
+			System.out.println("Plan: " + plan);
+			frontier.clear();
 		}
-		 */
+		Action nextAction = plan.pop();
 
-
-
+		currentState = SearchAI.getNextState(currentState, nextAction,null, fakeGoal, false, maxRow, maxCol, safeTiles);
+		SearchAI.printState(currentState, "The new state");
 
 		// Return a safe move with the lowest cost.
-		return Action.FORWARD;
+		return nextAction;
 
 	}
 
@@ -495,27 +348,14 @@ public class MyAI extends Agent
 		if(state.positionY > 0) {
 			neighbors.add("" + (state.positionX) + (state.positionY-1));
 		}
-		if(numRow == -1 || state.positionX < numRow) {
+		if(state.positionX < maxRow) {
 			neighbors.add("" + (state.positionX+1) + state.positionY);
 		}
-		if(numCol == -1 || state.positionX < numCol) {
+		if(state.positionX < maxCol) {
 			neighbors.add("" + (state.positionX) + (state.positionY+1));
 		}
 
 		return neighbors;
 	}
 
-	/*public World.Tile[][] createBoard() {
-		World.Tile[][] board = new World.Tile[numRow][numCol];
-
-
-		for ( int r = 0; r < rowDimension; ++r ) {
-			for (int c = 0; c < colDimension; ++c) {
-				board[c][r] = new board.Tile();
-
-			}
-		}
-
-		return
-	}*/
 }
