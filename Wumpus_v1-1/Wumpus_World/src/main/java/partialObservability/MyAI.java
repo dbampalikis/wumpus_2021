@@ -64,7 +64,7 @@ public class MyAI extends Agent
 	int numRow = -1;      // Real height of the world.
 	int maxCol = 10;       // Running width of the world.
 	int maxRow = 10;       // Running height of the world.
-	boolean DEBUG = true;
+	boolean DEBUG = false;
 	PriorityQueue<Position> frontier = new PriorityQueue<>(positionComparator);
 	PlBeliefSet bs = new PlBeliefSet();
 
@@ -109,8 +109,8 @@ public class MyAI extends Agent
 
 		try {
 
-			System.out.println("=============== New Round ===============");
-			SearchAI.printState(currentState, "Current state");
+			if (DEBUG) System.out.println("=============== New Round ===============");
+			if (DEBUG) SearchAI.printState(currentState, "Current state");
 
 
 			PlParser plParser = new PlParser();
@@ -132,6 +132,10 @@ public class MyAI extends Agent
 
 			if(!safeTiles.contains("00")) {
 				safeTiles.add("00");
+				// !P00 and !W00 are always true.
+				bs.add((PlFormula) new Negation(new Proposition ("P00")));
+				bs.add((PlFormula) new Negation(new Proposition ("W00")));
+				// There is at leat one wumpus: disjunction of all Wxy.
 				String s = "W00";
 				for (int i = 0; i < 10; i++) {
 					for (int j = 0; j < 10; j++) {
@@ -142,12 +146,22 @@ public class MyAI extends Agent
 				}
 				PlFormula wumpusDisjunction = plParser.parseFormula(s);
 				bs.add(wumpusDisjunction);
+				// There is at most one wumpus: disjunction of !Wxy pairs.
+				for (int i = 0; i < 10; i++) {
+					for (int j = 0; j < 10; j++) {
+						String s1 = "" + i + j;
 
-				bs.add((PlFormula) new Negation(new Proposition ("P00")));
-				bs.add((PlFormula) new Negation(new Proposition ("W00")));
+						for (int n = 0; n < 10; n++) {
+							for (int m = 0; m < 10; m++) {
+								String s2 = "" + n + m;
+								if (!s1.equals(s2)) {
+									bs.add(plParser.parseFormula("!W" + s1 + " || !W" + s2));
+								}
+							}
+						}
+					}
+				}
 			}
-
-
 
 			// Update visited tiles.
 			if(!visitedTiles.contains("" + currentState.positionX + currentState.positionY)) {
@@ -254,7 +268,7 @@ public class MyAI extends Agent
 							tmpPlan = SearchAI.searchPath(currentState, goalPosition, null, false, maxRow, maxCol, safeTiles);
 							Position currentPosition = new Position(tile, tmpPlan.size(), tmpPlan);
 							frontier.add(currentPosition);
-							System.out.println("For tile " + tile + " the plan is " + tmpPlan);
+							if (DEBUG) System.out.println("For tile " + tile + " the plan is " + tmpPlan);
 						}
 					}
 				} /*else if (currentState.arrow) { // Case where the plan is to kill wumpus
@@ -317,13 +331,13 @@ public class MyAI extends Agent
 
 		if(!frontier.isEmpty()) {
 			plan = frontier.remove().plan;
-			System.out.println("Plan: " + plan);
+			if (DEBUG) System.out.println("Plan: " + plan);
 			frontier.clear();
 		}
 		Action nextAction = plan.pop();
 
 		currentState = SearchAI.getNextState(currentState, nextAction,null, fakeGoal, false, maxRow, maxCol, safeTiles);
-		SearchAI.printState(currentState, "The new state");
+		if (DEBUG) SearchAI.printState(currentState, "The new state");
 
 		// Return a safe move with the lowest cost.
 		return nextAction;
@@ -353,7 +367,7 @@ public class MyAI extends Agent
 		implication = implication + ")";
 
 
-		System.out.println("Implication: " + implication);
+		if (DEBUG) System.out.println("Implication: " + implication);
 		return implication;
 	}
 
