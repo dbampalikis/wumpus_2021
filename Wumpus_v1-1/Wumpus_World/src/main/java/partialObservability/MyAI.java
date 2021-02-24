@@ -60,6 +60,7 @@ public class MyAI extends Agent
 	LinkedList<Action> tmpPlan = new LinkedList<Action>(); // Action plan to be returned by SearchAI.
 	public static ArrayList<String> safeTiles = new ArrayList<String>(); // TODO: Do we need public static?
 	ArrayList<String> visitedTiles = new ArrayList<String>();
+	ArrayList<String> visitedTilesWithDuplicates = new ArrayList<String>();
 	int numCol = -1;      // Real width of the world.
 	int numRow = -1;      // Real height of the world.
 	int maxCol = 10;       // Running width of the world.
@@ -82,7 +83,7 @@ public class MyAI extends Agent
 		try {
 			PlFormula f = plParser.parseFormula(symbol);
 			answer = r.query(bs, f);
-			if (DEBUG) System.out.println("Is " + f + " true? " + answer);
+			// if (DEBUG) System.out.println("Is " + f + " true? " + answer);
 		} catch (IOException e) {
 			System.out.println(e.getStackTrace());
 		}
@@ -219,13 +220,13 @@ public class MyAI extends Agent
 			if(!visitedTiles.contains("" + currentState.positionX + currentState.positionY)) {
 				visitedTiles.add("" + currentState.positionX + currentState.positionY);
 			}
+			visitedTilesWithDuplicates.add("" + currentState.positionX + currentState.positionY);
 			if (DEBUG) System.out.println("\n[" + currentState.positionX + "," + currentState.positionY + "]");
 
 
 			// Breeze
 			Proposition p = new Proposition("B" + currentState.positionX + currentState.positionY);
 			if (breeze) {
-				System.out.println("!!! BREEZE");
 				bs.add(p);
 			} else {
 				bs.add((PlFormula) p.complement());
@@ -237,7 +238,6 @@ public class MyAI extends Agent
 			// Stench
 			p = new Proposition("S" + currentState.positionX + currentState.positionY);
 			if (stench) {
-				System.out.println("!!! STENCH");
 				bs.add(p);
 			} else {
 				bs.add((PlFormula) p.complement());
@@ -249,7 +249,6 @@ public class MyAI extends Agent
 			// Scream
 			// TODO: Replace Wxy with !Wxy because it is dead now.
 			if (scream) {
-				System.out.println("!!! SCREAM");
 				// Remove Wxy.
 				// Add !Wxy.
 			}
@@ -268,7 +267,7 @@ public class MyAI extends Agent
 			if (checkAll) {
 				// After finding wumpus - reconsider all tiles for safety.
 				// System.out.println("in wumpusKnown");
-				System.out.println("Checking all tiles for safety...");
+				System.out.println("!!!!!! Checking all tiles for safety !!!!!!");
 				for (int i = 0; i < 4; i++) {
 					for (int j = 0; j < 4; j++) {
 						neighbors.add("" + i + j);
@@ -353,7 +352,6 @@ public class MyAI extends Agent
 					// Select one with smallest and add Action.SHOOT
 
 				}*/ else {
-					System.out.println("CRUSHING HERE???????????");
 					plan.clear();
 
 					tmpPlan = SearchAI.searchPath(currentState, fakeGoal, null, false, maxRow, maxCol, safeTiles);
@@ -394,9 +392,10 @@ public class MyAI extends Agent
 			// ----------------------------------------------------------------------------------
 
 
-			if (DEBUG) System.out.println("Visited tiles: " + visitedTiles);
 			if (DEBUG) System.out.println("Latest KB: " + bs);
-			if (DEBUG) System.out.println("Latest safe tiles: " + safeTiles);
+			if (DEBUG) System.out.println("Path: " + visitedTilesWithDuplicates);
+			if (DEBUG) System.out.println("Unique visited tiles: " + visitedTiles);
+			if (DEBUG) System.out.println("Unique safe tiles: " + safeTiles);
 
 
 
@@ -442,7 +441,7 @@ public class MyAI extends Agent
 		implication = implication + ")";
 
 
-		if (DEBUG) System.out.println("Implication: " + implication);
+		// if (DEBUG) System.out.println("Implication: " + implication);
 		return implication;
 	}
 
