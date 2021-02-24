@@ -67,7 +67,8 @@ public class MyAI extends Agent
 	boolean DEBUG = true;
 	PriorityQueue<Position> frontier = new PriorityQueue<>(positionComparator);
 	PlBeliefSet bs = new PlBeliefSet();
-	boolean checkSafetyofAllTiles = false;
+	boolean checkAll = false;
+	boolean checkedAll = false;
 
 	public boolean Ask(PlBeliefSet bs, String symbol) {
 
@@ -264,14 +265,15 @@ public class MyAI extends Agent
 			symbols = new String[]{"P", "W", "!P", "!W"};
 			
 			
-			if (checkSafetyofAllTiles) {
+			if (checkAll) {
 				// After finding wumpus - reconsider all tiles for safety.
 				// System.out.println("in wumpusKnown");
 				System.out.println("Checking all tiles for safety...");
 				for (int i = 0; i < 4; i++) {
 					for (int j = 0; j < 4; j++) {
 						neighbors.add("" + i + j);
-						checkSafetyofAllTiles = false;
+						checkAll = false;
+						checkedAll = true;
 					}
 				}
 			} else {
@@ -287,7 +289,7 @@ public class MyAI extends Agent
 						if (symbol.equals("W")) {
 							System.out.println("!!! WUMPUS IS IN " + neighbor);
 							// In next iteration - reconsider all tiles for safety.
-							checkSafetyofAllTiles = true;
+							if (!checkedAll) checkAll = true;
 						}
 						// Add this to the KB.
 						bs.add(plParser.parseFormula(symbol+neighbor));
