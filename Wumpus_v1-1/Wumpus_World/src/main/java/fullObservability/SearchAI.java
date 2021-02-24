@@ -140,6 +140,7 @@ public class SearchAI extends Agent {
             for (Action act: Action.values()) {
                 //System.out.println(act);
                 newState = getNextState(currentState, act, board, goldPosition, fullyObservable, maxRow, maxCol, safeTiles);
+                printState(newState, "The new state: ");
                 if (newState.tscore > 1000) {
                     continue;
                 }
@@ -271,7 +272,7 @@ public class SearchAI extends Agent {
                         ++currentState.gscore;
                     }
                 } else {
-                    currentState.gscore += 1000;
+                    currentState.gscore += 11;
                 }
                 break;
 

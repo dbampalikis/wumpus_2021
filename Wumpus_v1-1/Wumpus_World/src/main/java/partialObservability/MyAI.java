@@ -56,9 +56,11 @@ public class MyAI extends Agent
 		}
 	}
 	LinkedList<Integer> fakeGoal = new LinkedList<Integer>(){{ add(0); add(0); }};
+	String wumpusPosition = "";
 	public LinkedList<Action> plan = new LinkedList<Action>();
 	LinkedList<Action> tmpPlan = new LinkedList<Action>(); // Action plan to be returned by SearchAI.
 	public static ArrayList<String> safeTiles = new ArrayList<String>(); // TODO: Do we need public static?
+	public static ArrayList<String> wumpusTiles = new ArrayList<String>();
 	ArrayList<String> visitedTiles = new ArrayList<String>();
 	ArrayList<String> visitedTilesWithDuplicates = new ArrayList<String>();
 	int numCol = -1;      // Real width of the world.
@@ -94,8 +96,8 @@ public class MyAI extends Agent
 	PlFormula generateWumpusDisjunction() {
 		String s = "W00";
 		// TODO: Replace 4 with 10.
-		for (int i = 0; i < 4; i++) {
-			for (int j = 0; j < 4; j++) {
+		for (int i = 0; i < 10; i++) {
+			for (int j = 0; j < 10; j++) {
 				if (!(i == 0 && j == 0)) {
 					s = s + "||W" + i + j;
 				}
@@ -116,13 +118,13 @@ public class MyAI extends Agent
 		PlParser plParser = new PlParser();
 
 		// TODO: Replace 4 with 10.
-		for (int i = 0; i < 4; i++) {
-			for (int j = 0; j < 4; j++) {
+		for (int i = 0; i < 10; i++) {
+			for (int j = 0; j < 10; j++) {
 				String s1 = "" + i + j;
 
 				// TODO: Replace 4 with 10.
-				for (int n = 0; n < 4; n++) {
-					for (int m = 0; m < 4; m++) {
+				for (int n = 0; n < 10; n++) {
+					for (int m = 0; m < 10; m++) {
 						String s2 = "" + n + m;
 						if (!s1.equals(s2)) {
 							try {
@@ -242,7 +244,7 @@ public class MyAI extends Agent
 
 			// Stench
 			p = new Proposition("S" + currentState.positionX + currentState.positionY);
-			if (stench) {
+			if (stench && currentState.wumpus) {
 				bs.add(p);
 			} else {
 				bs.add((PlFormula) p.complement());
@@ -251,11 +253,43 @@ public class MyAI extends Agent
 			// if (DEBUG) System.out.println("BS:" + bs);
 
 
-			// Scream
-			// TODO: Replace Wxy with !Wxy because it is dead now.
+			// Scream - Remove the wumpus from the knowledge base
 			if (scream) {
-				// Remove Wxy.
-				// Add !Wxy.
+				System.out.println("Cleanup is starting");
+				//wumpusPosition = "";
+				currentState.wumpus = false;
+				safeTiles.add(wumpusPosition);
+				bs.remove(new Proposition("W" + wumpusPosition));
+
+				// There is at least one wumpus: disjunction of all Wxy.
+				bs.remove(generateWumpusDisjunction());
+				// There is at most one wumpus: disjunction of !Wxy pairs.
+				bs.removeAll(generateBsWithPairsOfWumpusDisjunctions());
+
+
+				ArrayList<PlFormula> remove = new ArrayList<>();
+				System.out.println("Cleanup is starting2");
+				for (PlFormula element : bs) {
+					//System.out.println("Element: " + element);
+					if(element.toString().contains("W")) {
+						remove.add(element);
+
+					}
+				}
+				for (PlFormula el : remove) {
+					//System.out.println("Element to remove: " + el);
+					bs.remove(el);
+				}
+
+				// Add negations for wumpus in every tile
+				for (int i = 0; i < 10; i++) {
+					for (int j = 0; j < 10; j++) {
+						bs.add(plParser.parseFormula("!W" + i + j));
+					}
+				}
+				System.out.println("Knowledge base after wumpus cleaning");
+				System.out.println(bs);
+
 			}
 
 
@@ -274,8 +308,8 @@ public class MyAI extends Agent
 				// System.out.println("in wumpusKnown");
 				System.out.println("!!!!!! Checking all tiles for safety !!!!!!");
 				// TODO: Replace 4 with 10.
-				for (int i = 0; i < 4; i++) {
-					for (int j = 0; j < 4; j++) {
+				for (int i = 0; i < 10; i++) {
+					for (int j = 0; j < 10; j++) {
 						neighbors.add("" + i + j);
 						checkAll = false;
 						checkedAll = true;
@@ -294,6 +328,7 @@ public class MyAI extends Agent
 						if (symbol.equals("W")) {
 							System.out.println("!!! WUMPUS IS IN " + neighbor);
 							// In next iteration - reconsider all tiles for safety.
+							wumpusPosition = neighbor;
 							if (!checkedAll) checkAll = true;
 						}
 						// Add this to the KB.
@@ -312,7 +347,7 @@ public class MyAI extends Agent
 
 			// Remove tiles outside of the world from the safe tiles.
 			removeOutsideTiles(safeTiles);
-
+			System.out.println("Safe tiles after remove: " + safeTiles);
 			// ----------------------------------------------------------------------------------
 			// if ASK(KB, Glitter) = true
 			//     then plan ← [Grab] + PLAN-ROUTE(current,{[1,1]}, safe) + [Climb]
@@ -337,6 +372,9 @@ public class MyAI extends Agent
 							LinkedList<Integer> goalPosition = new LinkedList<>();
 							goalPosition.add(Integer.parseInt(tile.substring(0, 1)));
 							goalPosition.add(Integer.parseInt(tile.substring(1, 2)));
+							SearchAI.printState(currentState, "Before search: ");
+							System.out.println("Goal position in search: " + goalPosition);
+							System.out.println("Max dimensions: " + maxRow + maxCol);
 							tmpPlan = SearchAI.searchPath(currentState, goalPosition, null, false, maxRow, maxCol, safeTiles);
 							if (DEBUG) System.out.println("For tile " + tile + " the plan is " + tmpPlan);
 
@@ -351,14 +389,40 @@ public class MyAI extends Agent
 
 						}
 					}
-				} /*else if (currentState.arrow) { // Case where the plan is to kill wumpus
-					wumpusStr = getWumpusPosition();
+				} else if (currentState.arrow) { // Case where the plan is to kill wumpus
+					if(!wumpusPosition.equals("")) {
+						if(Ask(bs, "!P" + wumpusPosition)) {
+							// TODO: Kill wumpus: Create list with tiles that have
+							// the same row or column as wumpusPosition among the safe tiles
+							// TODO:
+							System.out.println("Decided to kill wumpus");
+							wumpusKillingTiles(wumpusTiles);
+							for (String tile : wumpusTiles) {
+								tscore = Integer.MAX_VALUE;
+								LinkedList<Integer> goalPosition = new LinkedList<>();
+								goalPosition.add(Integer.parseInt(tile.substring(0, 1)));
+								goalPosition.add(Integer.parseInt(tile.substring(1, 2)));
+								tmpPlan = SearchAI.searchPath(currentState, goalPosition, null, false, maxRow, maxCol, safeTiles);
+								if (DEBUG) System.out.println("For tile " + tile + " the plan is " + tmpPlan);
+
+								faceWumpus(currentState, tmpPlan);
+
+								tmpPlan.add(Action.SHOOT);
+								System.out.println("Wumpus killing: " + tmpPlan);
+								currentState.arrow = false;
+
+								Position currentPosition = new Position(tile, tmpPlan.size(), tmpPlan);
+								frontier.add(currentPosition);
+								if (DEBUG) System.out.println("Plan added");
+							}
+						}
+					}
 					// TODO: check which tiles have the same row number as the wumpus
 					// TODO: check which tiles have the same column as the wumpus
 					// Get plan cost for each of them
 					// Select one with smallest and add Action.SHOOT
 
-				}*/ else {
+				} else {
 					plan.clear();
 
 					tmpPlan = SearchAI.searchPath(currentState, fakeGoal, null, false, maxRow, maxCol, safeTiles);
@@ -424,11 +488,68 @@ public class MyAI extends Agent
 		return nextAction;
 
 	}
+	// The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
+	private void faceWumpus(SearchAI.State currentState, LinkedList<Action> tmpPlan) {
+		if(currentState.positionX == Integer.parseInt(wumpusPosition.substring(0,1))) {
+			if(currentState.positionY > Integer.parseInt(wumpusPosition.substring(1,2))) {
+				if(currentState.direction == 0) {
+					tmpPlan.add(Action.TURN_RIGHT);
+				} else if(currentState.direction == 2) {
+					tmpPlan.add(Action.TURN_LEFT);
+				} else if(currentState.direction == 3) {
+					tmpPlan.add(Action.TURN_LEFT);
+					tmpPlan.add(Action.TURN_LEFT);
+				}
+			} else {
+				if(currentState.direction == 0) {
+					tmpPlan.add(Action.TURN_LEFT);
+				} else if(currentState.direction == 2) {
+					tmpPlan.add(Action.TURN_RIGHT);
+				} else if(currentState.direction == 3) {
+					tmpPlan.add(Action.TURN_LEFT);
+					tmpPlan.add(Action.TURN_LEFT);
+				}
+			}
+		} else {
+			if(currentState.positionX > Integer.parseInt(wumpusPosition.substring(0,1))) {
+				if(currentState.direction == 0) {
+					tmpPlan.add(Action.TURN_LEFT);
+					tmpPlan.add(Action.TURN_LEFT);
+				} else if(currentState.direction == 1) {
+					tmpPlan.add(Action.TURN_RIGHT);
+				} else if(currentState.direction == 3) {
+					tmpPlan.add(Action.TURN_LEFT);
+				}
+			} else {
+				if(currentState.direction == 2) {
+					tmpPlan.add(Action.TURN_LEFT);
+					tmpPlan.add(Action.TURN_LEFT);
+				} else if(currentState.direction == 1) {
+					tmpPlan.add(Action.TURN_LEFT);
+				} else if(currentState.direction == 3) {
+					tmpPlan.add(Action.TURN_RIGHT);
+				}
+			}
+		}
+	}
+
+	// Get tiles that the wumpus can be shot from
+	private void wumpusKillingTiles(ArrayList<String> wumpusTiles) {
+
+		for(int i=0; i<safeTiles.size(); i++) {
+			if(Integer.parseInt(safeTiles.get(i).substring(0, 1)) == Integer.parseInt(wumpusPosition.substring(0,1))
+				|| Integer.parseInt(safeTiles.get(i).substring(1, 2)) == Integer.parseInt(wumpusPosition.substring(1,2))) {
+				wumpusTiles.add(safeTiles.get(i));
+			}
+		}
+
+	}
 
 	private void removeOutsideTiles(ArrayList<String> safeTiles) {
 		System.out.println("About to remove tiles");
 
 		ArrayList<Integer> toRemove = new ArrayList<>();
+		System.out.println("Safe tiles in remove: " + safeTiles);
 		for(int i=0; i<safeTiles.size(); i++) {
 			if(Integer.parseInt(safeTiles.get(i).substring(0, 1)) >= maxCol || Integer.parseInt(safeTiles.get(i).substring(1, 2)) >= maxRow) {
 				toRemove.add(i);
@@ -438,10 +559,11 @@ public class MyAI extends Agent
 		System.out.println(toRemove);
 
 		for(int element : toRemove) {
+			System.out.println(element);
 			safeTiles.remove(element);
 		}
+		System.out.println("Removed tiles");
 	}
-
 
 	public String createDoubleImplication(String source, SearchAI.State state) {
 		String implication = "";
