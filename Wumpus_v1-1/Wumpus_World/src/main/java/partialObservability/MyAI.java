@@ -93,6 +93,7 @@ public class MyAI extends Agent
 
 	PlFormula generateWumpusDisjunction() {
 		String s = "W00";
+		// TODO: Replace 4 with 10.
 		for (int i = 0; i < 4; i++) {
 			for (int j = 0; j < 4; j++) {
 				if (!(i == 0 && j == 0)) {
@@ -114,10 +115,12 @@ public class MyAI extends Agent
 		PlBeliefSet tmpBs = new PlBeliefSet();
 		PlParser plParser = new PlParser();
 
+		// TODO: Replace 4 with 10.
 		for (int i = 0; i < 4; i++) {
 			for (int j = 0; j < 4; j++) {
 				String s1 = "" + i + j;
 
+				// TODO: Replace 4 with 10.
 				for (int n = 0; n < 4; n++) {
 					for (int m = 0; m < 4; m++) {
 						String s2 = "" + n + m;
@@ -175,6 +178,10 @@ public class MyAI extends Agent
 						maxRow = currentState.positionY + 1;
 						break;
 				}
+
+				// Remove tiles outside of the world from the safe tiles.
+				
+
 				System.out.println("After BUMP: currentState.positionX = " + currentState.positionX);
 				System.out.println("After BUMP: currentState.positionY = " + currentState.positionY);
 				System.out.println("After BUMP: maxCol = " + maxCol);
@@ -268,6 +275,7 @@ public class MyAI extends Agent
 				// After finding wumpus - reconsider all tiles for safety.
 				// System.out.println("in wumpusKnown");
 				System.out.println("!!!!!! Checking all tiles for safety !!!!!!");
+				// TODO: Replace 4 with 10.
 				for (int i = 0; i < 4; i++) {
 					for (int j = 0; j < 4; j++) {
 						neighbors.add("" + i + j);
@@ -455,10 +463,10 @@ public class MyAI extends Agent
 		if(state.positionY > 0) {
 			neighbors.add("" + (state.positionX) + (state.positionY-1));
 		}
-		if(state.positionX < maxRow) {
+		if(state.positionX < maxCol) {
 			neighbors.add("" + (state.positionX+1) + state.positionY);
 		}
-		if(state.positionX < maxCol) {
+		if(state.positionY < maxRow) {
 			neighbors.add("" + (state.positionX) + (state.positionY+1));
 		}
 
