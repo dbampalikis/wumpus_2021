@@ -132,10 +132,22 @@ public class MyAI extends Agent
 
 			if(!safeTiles.contains("00")) {
 				safeTiles.add("00");
+				String s = "W00";
+				for (int i = 0; i < 10; i++) {
+					for (int j = 0; j < 10; j++) {
+						if (i != 0 && j != 0) {
+							s = s + "||W" + i + j;
+						}
+					}
+				}
+				PlFormula wumpusDisjunction = plParser.parseFormula(s);
+				bs.add(wumpusDisjunction);
+
+				bs.add((PlFormula) new Negation(new Proposition ("P00")));
+				bs.add((PlFormula) new Negation(new Proposition ("W00")));
 			}
 
-			bs.add((PlFormula) new Negation(new Proposition ("P00")));
-			bs.add((PlFormula) new Negation(new Proposition ("W00")));
+
 
 			// Update visited tiles.
 			if(!visitedTiles.contains("" + currentState.positionX + currentState.positionY)) {
@@ -245,7 +257,14 @@ public class MyAI extends Agent
 							System.out.println("For tile " + tile + " the plan is " + tmpPlan);
 						}
 					}
-				} else {
+				} /*else if (currentState.arrow) { // Case where the plan is to kill wumpus
+					wumpusStr = getWumpusPosition();
+					// TODO: check which tiles have the same row number as the wumpus
+					// TODO: check which tiles have the same column as the wumpus
+					// Get plan cost for each of them
+					// Select one with smallest and add Action.SHOOT
+
+				}*/ else {
 					plan.clear();
 
 					tmpPlan = SearchAI.searchPath(currentState, fakeGoal, null, false, maxRow, maxCol, safeTiles);
