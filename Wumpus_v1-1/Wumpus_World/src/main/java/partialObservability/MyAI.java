@@ -67,6 +67,7 @@ public class MyAI extends Agent
 	boolean DEBUG = true;
 	PriorityQueue<Position> frontier = new PriorityQueue<>(positionComparator);
 	PlBeliefSet bs = new PlBeliefSet();
+	boolean checkSafetyofAllTiles = false;
 
 	public boolean Ask(PlBeliefSet bs, String symbol) {
 
@@ -155,6 +156,8 @@ public class MyAI extends Agent
 
 		try {
 
+			// System.out.println();
+
 			// Bump
 			if (bump) {
 				// Update the dimension - global maximum.
@@ -190,7 +193,8 @@ public class MyAI extends Agent
 			PlFormula question;
 			boolean answer;
 			String[] symbols;
-			ArrayList<String> neighbors;
+			// ArrayList<String> neighbors;
+			ArrayList<String> neighbors = new ArrayList<String>();
 
 
 			// ----------------------------------------------------------------------------------
@@ -258,7 +262,22 @@ public class MyAI extends Agent
 
 			// Questions - answers.
 			symbols = new String[]{"P", "W", "!P", "!W"};
-			neighbors = getNeighbors(currentState);
+			
+			
+			if (checkSafetyofAllTiles) {
+				// After finding wumpus - reconsider all tiles for safety.
+				// System.out.println("in wumpusKnown");
+				System.out.println("Checking all tiles for safety...");
+				for (int i = 0; i < 4; i++) {
+					for (int j = 0; j < 4; j++) {
+						neighbors.add("" + i + j);
+						checkSafetyofAllTiles = false;
+					}
+				}
+			} else {
+				// System.out.println("in NOT wumpusKnown");
+				neighbors = getNeighbors(currentState);	
+			}
 
 			for (String neighbor : neighbors) {
 				for (String symbol : symbols) {
@@ -267,21 +286,8 @@ public class MyAI extends Agent
 					if (answer) {
 						if (symbol.equals("W")) {
 							System.out.println("!!! WUMPUS IS IN " + neighbor);
-							// TODO: Reconsider Wumpus' neighbours for safety.
-							// Create a global variable wumpusNeighbors - initially empty.
-							// In the code above replace with :
-							// neighbors = getNeighbors(currentState) + wumpusNeighbors;
-							// After we find wumpus - add its neighbors to wumpusNeighbors
-							// so that those tiles are reconsidered for safety.
-
-//							SearchAI.State wumpusState = new SearchAI.State(Integer.parseInt(neighbor.substring(0,1)), Integer.parseInt(neighbor.substring(1,2)), false, 0, 0, Integer.MAX_VALUE, true, true);
-//							ArrayList<String> wumpusNeighbors = getNeighbors(wumpusState);
-//							System.out.println("!!! WUMPUS NEIGHBOURS: " + wumpusNeighbors);
-
-							// TODO: Mark all non-Wumpus tiles as !Wxy. - probably unnecessary.
-
-
-
+							// In next iteration - reconsider all tiles for safety.
+							checkSafetyofAllTiles = true;
 						}
 						// Add this to the KB.
 						bs.add(plParser.parseFormula(symbol+neighbor));
