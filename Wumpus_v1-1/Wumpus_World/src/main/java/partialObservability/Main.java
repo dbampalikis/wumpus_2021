@@ -76,7 +76,7 @@ public class Main
 		// Important Variables
 		boolean search       = false;
 		boolean debug        = false;
-		boolean verbose      = false;
+		boolean verbose      = true;
 		boolean randomAI     = false;
 		boolean manualAI     = false;
 		boolean folder       = false;
@@ -228,6 +228,7 @@ public class Main
 
 				numOfScores += 1;
 				sumOfScores += score;
+				System.out.println("Score: " + score);
 				sumOfScoresSquared += score*score;
 				totalTime += elapsedTime;
 			}

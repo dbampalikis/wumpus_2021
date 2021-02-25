@@ -29,8 +29,8 @@ public class MainSearch
 		// Important Variables
 		boolean search       = true;
 		boolean debug        = false;
-		boolean verbose      = false;
-		boolean randomAI     = false;
+		boolean verbose      = true;
+		boolean randomAI     = true;
 		boolean manualAI      = false;
 		boolean folder       = false;
 		String	worldFile    = "";
