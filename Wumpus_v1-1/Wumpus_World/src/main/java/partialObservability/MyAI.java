@@ -339,22 +339,6 @@ public class MyAI extends Agent
 			frontier.clear();
 		}
 
-		/*if(plan.size() == 0 && !killWumpus) {
-			tmpPlan.clear();
-			SearchAI.printState(currentState, "Final state: ");
-			frontier.clear();
-			fakeGoal.clear();
-			fakeGoal.add(0);
-			fakeGoal.add(0);
-			tmpPlan = SearchAI.searchPath(currentState, fakeGoal, null, false, maxRow, maxCol, safeTiles);
-			tmpPlan.add(Action.CLIMB);
-			Position currentPosition = new Position(""+fakeGoal.get(0)+fakeGoal.get(1), tmpPlan.size(), tmpPlan);
-			frontier.add(currentPosition);
-			plan.clear();
-			plan.addAll(tmpPlan);
-			//plan.add(Action.CLIMB);
-			//tmpPlan = SearchAI.searchPath(currentState, fakeGoal, null, false, maxRow, maxCol, safeTiles);
-		}*/
 
 		// Pick the next action from the current plan.
 		if (DEBUG) System.out.println("The remaining plan: " + plan + "\n");
