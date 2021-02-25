@@ -516,6 +516,7 @@ public class MyAI extends Agent
 	// The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
 	private void faceWumpus(SearchAI.State currentState, LinkedList<Action> tmpPlan) {
 		if(currentState.positionX == Integer.parseInt(wumpusPosition.substring(0,1))) {
+			// Shoot wumpus from the top
 			if(currentState.positionY > Integer.parseInt(wumpusPosition.substring(1,2))) {
 				if(currentState.direction == 0) {
 					tmpPlan.add(Action.TURN_RIGHT);
@@ -526,6 +527,7 @@ public class MyAI extends Agent
 					tmpPlan.add(Action.TURN_LEFT);
 				}
 			} else {
+				// Shoot wumpus from below
 				if(currentState.direction == 0) {
 					tmpPlan.add(Action.TURN_LEFT);
 				} else if(currentState.direction == 2) {
@@ -536,23 +538,25 @@ public class MyAI extends Agent
 				}
 			}
 		} else {
+			// Shoot wumpus from it's right (should face to the left)
 			if(currentState.positionX > Integer.parseInt(wumpusPosition.substring(0,1))) {
 				if(currentState.direction == 0) {
 					tmpPlan.add(Action.TURN_LEFT);
 					tmpPlan.add(Action.TURN_LEFT);
 				} else if(currentState.direction == 1) {
-					tmpPlan.add(Action.TURN_RIGHT);
-				} else if(currentState.direction == 3) {
 					tmpPlan.add(Action.TURN_LEFT);
+				} else if(currentState.direction == 3) {
+					tmpPlan.add(Action.TURN_RIGHT);
 				}
 			} else {
+				// Shoot wumpus from it's left (should face to the right)
 				if(currentState.direction == 2) {
 					tmpPlan.add(Action.TURN_LEFT);
 					tmpPlan.add(Action.TURN_LEFT);
 				} else if(currentState.direction == 1) {
-					tmpPlan.add(Action.TURN_LEFT);
-				} else if(currentState.direction == 3) {
 					tmpPlan.add(Action.TURN_RIGHT);
+				} else if(currentState.direction == 3) {
+					tmpPlan.add(Action.TURN_LEFT);
 				}
 			}
 		}
