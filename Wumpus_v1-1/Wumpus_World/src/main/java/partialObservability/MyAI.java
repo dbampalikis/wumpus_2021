@@ -34,7 +34,7 @@ public class MyAI extends Agent
 		bs.add((PlFormula) a.complement().combineWithOr(b)); // { !a||b }
 		bs.add(a); // { !a||b, a }
 		AbstractPlReasoner r = new SatReasoner();
-		System.out.println(r.query(bs, b)); // true
+		if (DEBUG) System.out.println(r.query(bs, b)); // true
 	}
 */
 
@@ -72,6 +72,7 @@ public class MyAI extends Agent
 	PlBeliefSet bs = new PlBeliefSet();
 	boolean checkAll = false;
 	boolean checkedAll = false;
+	boolean killWumpus = false;
 
 	public boolean Ask(PlBeliefSet bs, String symbol) {
 
@@ -85,7 +86,7 @@ public class MyAI extends Agent
 		try {
 			PlFormula f = plParser.parseFormula(symbol);
 			answer = r.query(bs, f);
-			// if (DEBUG) System.out.println("Is " + f + " true? " + answer);
+			// if (DEBUG)  System.out.println("Is " + f + " true? " + answer);
 		} catch (IOException e) {
 			System.out.println(e.getStackTrace());
 		}
@@ -162,7 +163,7 @@ public class MyAI extends Agent
 
 		try {
 
-			// System.out.println();
+			// if (DEBUG) System.out.println();
 
 			// Bump
 			if (bump) {
@@ -182,21 +183,21 @@ public class MyAI extends Agent
 
 
 
-				System.out.println("After BUMP: currentState.positionX = " + currentState.positionX);
-				System.out.println("After BUMP: currentState.positionY = " + currentState.positionY);
-				System.out.println("After BUMP: maxCol = " + maxCol);
-				System.out.println("After BUMP: maxRow = " + maxRow);
+				if (DEBUG) System.out.println("After BUMP: currentState.positionX = " + currentState.positionX);
+				if (DEBUG) System.out.println("After BUMP: currentState.positionY = " + currentState.positionY);
+				if (DEBUG) System.out.println("After BUMP: maxCol = " + maxCol);
+				if (DEBUG) System.out.println("After BUMP: maxRow = " + maxRow);
 			}
 
 
-			if (DEBUG) System.out.println("=============== New Round ===============");
+			if (DEBUG)  System.out.println("=============== New Round ===============");
 			if (DEBUG) SearchAI.printState(currentState, "Current state");
-			if (DEBUG) System.out.println("Safe tiles:" + safeTiles);
+			if (DEBUG)  System.out.println("Safe tiles:" + safeTiles);
 
-			System.out.println("*** currentState.positionX = " + currentState.positionX);
-			System.out.println("*** currentState.positionY = " + currentState.positionY);
-			System.out.println("*** maxCol = " + maxCol);
-			System.out.println("*** maxRow = " + maxRow);
+			if (DEBUG) System.out.println("*** currentState.positionX = " + currentState.positionX);
+			if (DEBUG) System.out.println("*** currentState.positionY = " + currentState.positionY);
+			if (DEBUG) System.out.println("*** maxCol = " + maxCol);
+			if (DEBUG) System.out.println("*** maxRow = " + maxRow);
 
 			PlParser plParser = new PlParser();
 			PlFormula question;
@@ -228,7 +229,7 @@ public class MyAI extends Agent
 				visitedTiles.add("" + currentState.positionX + currentState.positionY);
 			}
 			visitedTilesWithDuplicates.add("" + currentState.positionX + currentState.positionY);
-			if (DEBUG) System.out.println("\n[" + currentState.positionX + "," + currentState.positionY + "]");
+			if (DEBUG)  System.out.println("\n[" + currentState.positionX + "," + currentState.positionY + "]");
 
 
 			// Breeze
@@ -239,7 +240,7 @@ public class MyAI extends Agent
 				bs.add((PlFormula) p.complement());
 			}
 			bs.add(plParser.parseFormula(createDoubleImplication("B", currentState)));
-			if (DEBUG) System.out.println("BS:" + bs);
+			//if (DEBUG) System.out.println("BS:" + bs);
 
 
 			// Stench
@@ -252,12 +253,12 @@ public class MyAI extends Agent
 				}
 
 				bs.add(plParser.parseFormula(createDoubleImplication("S", currentState)));
-				// if (DEBUG) System.out.println("BS:" + bs);
+				// if (DEBUG)  System.out.println("BS:" + bs);
 			}
 
 			// Scream - Remove the wumpus from the knowledge base
 			if (scream) {
-				System.out.println("Cleanup is starting");
+				if (DEBUG) System.out.println("Cleanup is starting");
 				//wumpusPosition = "";
 				currentState.wumpus = false;
 				safeTiles.add(wumpusPosition);
@@ -270,16 +271,16 @@ public class MyAI extends Agent
 
 
 				ArrayList<PlFormula> remove = new ArrayList<>();
-				System.out.println("Cleanup is starting2");
+				if (DEBUG) System.out.println("Cleanup is starting2");
 				for (PlFormula element : bs) {
-					//System.out.println("Element: " + element);
+					//if (DEBUG) System.out.println("Element: " + element);
 					if(element.toString().contains("W")) {
 						remove.add(element);
 
 					}
 				}
 				for (PlFormula el : remove) {
-					//System.out.println("Element to remove: " + el);
+					//if (DEBUG) System.out.println("Element to remove: " + el);
 					bs.remove(el);
 				}
 
@@ -289,8 +290,8 @@ public class MyAI extends Agent
 						bs.add(plParser.parseFormula("!W" + i + j));
 					}
 				}
-				System.out.println("Knowledge base after wumpus cleaning");
-				System.out.println(bs);
+				if (DEBUG) System.out.println("Knowledge base after wumpus cleaning");
+				//if (DEBUG) System.out.println(bs);
 
 			}
 
@@ -303,12 +304,12 @@ public class MyAI extends Agent
 
 			// Questions - answers.
 			symbols = new String[]{"P", "W", "!P", "!W"};
-			
-			
+
+
 			if (checkAll) {
 				// After finding wumpus - reconsider all tiles for safety.
-				// System.out.println("in wumpusKnown");
-				System.out.println("!!!!!! Checking all tiles for safety !!!!!!");
+				// if (DEBUG) System.out.println("in wumpusKnown");
+				if (DEBUG) System.out.println("!!!!!! Checking all tiles for safety !!!!!!");
 				// TODO: Replace 4 with 10.
 				for (int i = 0; i < maxCol; i++) {
 					for (int j = 0; j < maxRow; j++) {
@@ -318,8 +319,8 @@ public class MyAI extends Agent
 					}
 				}
 			} else {
-				// System.out.println("in NOT wumpusKnown");
-				neighbors = getNeighbors(currentState);	
+				// if (DEBUG) System.out.println("in NOT wumpusKnown");
+				neighbors = getNeighbors(currentState);
 			}
 
 			for (String neighbor : neighbors) {
@@ -328,7 +329,7 @@ public class MyAI extends Agent
 					answer = Ask(bs, symbol+neighbor);
 					if (answer) {
 						if (symbol.equals("W")) {
-							System.out.println("!!! WUMPUS IS IN " + neighbor);
+							if (DEBUG) System.out.println("!!! WUMPUS IS IN " + neighbor);
 							// In next iteration - reconsider all tiles for safety.
 							wumpusPosition = neighbor;
 							if (!checkedAll) checkAll = true;
@@ -342,14 +343,24 @@ public class MyAI extends Agent
 					// Add to safe tiles.
 					if(!safeTiles.contains(neighbor)) {
 						safeTiles.add(neighbor);
-						if (DEBUG) System.out.println("Tile " + neighbor + " is safe");
+						if (DEBUG)  System.out.println("Tile " + neighbor + " is safe");
 					}
 				}
 			}
 
+			if (killWumpus && plan.size() == 0) {
+
+				faceWumpus(currentState, plan);
+
+				plan.add(Action.SHOOT);
+				if (DEBUG) System.out.println("Wumpus killing: " + plan);
+				currentState.arrow = false;
+				killWumpus = false;
+			}
+
 			// Remove tiles outside of the world from the safe tiles.
 			removeOutsideTiles(safeTiles);
-			System.out.println("Safe tiles after remove: " + safeTiles);
+			if (DEBUG) System.out.println("Safe tiles after remove: " + safeTiles);
 			// ----------------------------------------------------------------------------------
 			// if ASK(KB, Glitter) = true
 			//     then plan ← [Grab] + PLAN-ROUTE(current,{[1,1]}, safe) + [Climb]
@@ -375,17 +386,17 @@ public class MyAI extends Agent
 							goalPosition.add(Integer.parseInt(tile.substring(0, 1)));
 							goalPosition.add(Integer.parseInt(tile.substring(1, 2)));
 							SearchAI.printState(currentState, "Before search: ");
-							System.out.println("Goal position in search: " + goalPosition);
-							System.out.println("Max dimensions: " + maxRow + maxCol);
+							if (DEBUG) System.out.println("Goal position in search: " + goalPosition);
+							if (DEBUG) System.out.println("Max dimensions: " + maxRow + maxCol);
 							tmpPlan = SearchAI.searchPath(currentState, goalPosition, null, false, maxRow, maxCol, safeTiles);
-							if (DEBUG) System.out.println("For tile " + tile + " the plan is " + tmpPlan);
+							if (DEBUG)  System.out.println("For tile " + tile + " the plan is " + tmpPlan);
 
 							if (tmpPlan.size() > 0) {
 								Position currentPosition = new Position(tile, tmpPlan.size(), tmpPlan);
 								frontier.add(currentPosition);
-								if (DEBUG) System.out.println("Plan added");
+								if (DEBUG)  System.out.println("Plan added");
 							} else {
-								if (DEBUG) System.out.println("Plan NOT added");
+								if (DEBUG)  System.out.println("Plan NOT added");
 							}
 
 
@@ -397,7 +408,7 @@ public class MyAI extends Agent
 							// TODO: Kill wumpus: Create list with tiles that have
 							// the same row or column as wumpusPosition among the safe tiles
 							// TODO:
-							System.out.println("Decided to kill wumpus");
+							if (DEBUG) System.out.println("Decided to kill wumpus");
 							wumpusKillingTiles(wumpusTiles);
 							for (String tile : wumpusTiles) {
 								tscore = Integer.MAX_VALUE;
@@ -405,17 +416,13 @@ public class MyAI extends Agent
 								goalPosition.add(Integer.parseInt(tile.substring(0, 1)));
 								goalPosition.add(Integer.parseInt(tile.substring(1, 2)));
 								tmpPlan = SearchAI.searchPath(currentState, goalPosition, null, false, maxRow, maxCol, safeTiles);
-								if (DEBUG) System.out.println("For tile " + tile + " the plan is " + tmpPlan);
+								if (DEBUG)  System.out.println("For tile " + tile + " the plan is " + tmpPlan);
+								killWumpus = true;
 
-								faceWumpus(currentState, tmpPlan);
-
-								tmpPlan.add(Action.SHOOT);
-								System.out.println("Wumpus killing: " + tmpPlan);
-								currentState.arrow = false;
 
 								Position currentPosition = new Position(tile, tmpPlan.size(), tmpPlan);
 								frontier.add(currentPosition);
-								if (DEBUG) System.out.println("Plan added");
+								if (DEBUG)  System.out.println("Plan added");
 				//			}
 				//		}
 					}
@@ -465,10 +472,10 @@ public class MyAI extends Agent
 			// ----------------------------------------------------------------------------------
 
 
-			if (DEBUG) System.out.println("Latest KB: " + bs);
-			if (DEBUG) System.out.println("Path: " + visitedTilesWithDuplicates);
-			if (DEBUG) System.out.println("Unique visited tiles: " + visitedTiles);
-			if (DEBUG) System.out.println("Unique safe tiles: " + safeTiles);
+			//if (DEBUG)  System.out.println("Latest KB: " + bs);
+			if (DEBUG)  System.out.println("Path: " + visitedTilesWithDuplicates);
+			if (DEBUG)  System.out.println("Unique visited tiles: " + visitedTiles);
+			if (DEBUG)  System.out.println("Unique safe tiles: " + safeTiles);
 
 
 
@@ -478,18 +485,13 @@ public class MyAI extends Agent
 
 		if(!frontier.isEmpty()) {
 			plan = frontier.remove().plan;
-			if (DEBUG) System.out.println("Plan: " + plan);
+			if (DEBUG)  System.out.println("Plan: " + plan);
 			frontier.clear();
 		}
-		if(plan.size() == 0) {
+		/*if(plan.size() == 0) {
 			tmpPlan.clear();
 			SearchAI.printState(currentState, "Final state: ");
-			/*tmpPlan = SearchAI.searchPath(currentState, fakeGoal, null, false, maxRow, maxCol, safeTiles);
-			tmpPlan.add(Action.CLIMB);
-			Position currentPosition = new Position(""+fakeGoal.get(0)+fakeGoal.get(1), tmpPlan.size(), tmpPlan);
-			frontier.add(currentPosition);
-			plan.clear();
-			plan.addAll(tmpPlan);*/
+
 			frontier.clear();
 			fakeGoal.clear();
 			fakeGoal.add(0);
@@ -502,7 +504,7 @@ public class MyAI extends Agent
 			plan.addAll(tmpPlan);
 			//plan.add(Action.CLIMB);
 			//tmpPlan = SearchAI.searchPath(currentState, fakeGoal, null, false, maxRow, maxCol, safeTiles);
-		}
+		}*/
 		Action nextAction = plan.pop();
 
 
@@ -532,21 +534,21 @@ public class MyAI extends Agent
 					tmpPlan.add(Action.TURN_LEFT);
 				} else if(currentState.direction == 2) {
 					tmpPlan.add(Action.TURN_RIGHT);
-				} else if(currentState.direction == 3) {
+				} else if(currentState.direction == 1) {
 					tmpPlan.add(Action.TURN_LEFT);
 					tmpPlan.add(Action.TURN_LEFT);
 				}
 			}
-		} else {
+		} else if ((currentState.positionY == Integer.parseInt(wumpusPosition.substring(1,2)))) {
 			// Shoot wumpus from it's right (should face to the left)
 			if(currentState.positionX > Integer.parseInt(wumpusPosition.substring(0,1))) {
 				if(currentState.direction == 0) {
 					tmpPlan.add(Action.TURN_LEFT);
 					tmpPlan.add(Action.TURN_LEFT);
 				} else if(currentState.direction == 1) {
-					tmpPlan.add(Action.TURN_LEFT);
-				} else if(currentState.direction == 3) {
 					tmpPlan.add(Action.TURN_RIGHT);
+				} else if(currentState.direction == 3) {
+					tmpPlan.add(Action.TURN_LEFT);
 				}
 			} else {
 				// Shoot wumpus from it's left (should face to the right)
@@ -554,9 +556,9 @@ public class MyAI extends Agent
 					tmpPlan.add(Action.TURN_LEFT);
 					tmpPlan.add(Action.TURN_LEFT);
 				} else if(currentState.direction == 1) {
-					tmpPlan.add(Action.TURN_RIGHT);
-				} else if(currentState.direction == 3) {
 					tmpPlan.add(Action.TURN_LEFT);
+				} else if(currentState.direction == 3) {
+					tmpPlan.add(Action.TURN_RIGHT);
 				}
 			}
 		}
@@ -575,23 +577,23 @@ public class MyAI extends Agent
 	}
 
 	private void removeOutsideTiles(ArrayList<String> safeTiles) {
-		System.out.println("About to remove tiles");
+		if (DEBUG) System.out.println("About to remove tiles");
 
 		ArrayList<Integer> toRemove = new ArrayList<>();
-		System.out.println("Safe tiles in remove: " + safeTiles);
+		if (DEBUG) System.out.println("Safe tiles in remove: " + safeTiles);
 		for(int i=0; i<safeTiles.size(); i++) {
 			if(Integer.parseInt(safeTiles.get(i).substring(0, 1)) >= maxCol || Integer.parseInt(safeTiles.get(i).substring(1, 2)) >= maxRow) {
 				toRemove.add(i);
 			}
 		}
 		Collections.sort(toRemove, Collections.reverseOrder());
-		System.out.println(toRemove);
+		if (DEBUG) System.out.println(toRemove);
 
 		for(int element : toRemove) {
-			System.out.println(element);
+			if (DEBUG) System.out.println(element);
 			safeTiles.remove(element);
 		}
-		System.out.println("Removed tiles");
+		if (DEBUG) System.out.println("Removed tiles");
 	}
 
 	public String createDoubleImplication(String source, SearchAI.State state) {
@@ -616,7 +618,7 @@ public class MyAI extends Agent
 		implication = implication + ")";
 
 
-		// if (DEBUG) System.out.println("Implication: " + implication);
+		// if (DEBUG)  System.out.println("Implication: " + implication);
 		return implication;
 	}
 
