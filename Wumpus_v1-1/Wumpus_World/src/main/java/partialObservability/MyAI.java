@@ -33,8 +33,8 @@ public class MyAI extends Agent
 	String wumpusPosition = ""; // Updated with the actual XY position of the Wumpus once becomes known.
 	public LinkedList<Action> plan = new LinkedList<Action>(); // Action plan to be executed.
 	LinkedList<Action> tmpPlan = new LinkedList<Action>(); // Intermediate action plan to be returned by SearchAI.
-	public static ArrayList<String> safeTiles = new ArrayList<String>(); // Tiles marked as safe (i.e., !Pxy && !Wxy)
-	public static ArrayList<String> wumpusTiles = new ArrayList<String>();
+	public ArrayList<String> safeTiles = new ArrayList<String>(); // Tiles marked as safe (i.e., !Pxy && !Wxy)
+	public ArrayList<String> wumpusTiles = new ArrayList<String>();
 	ArrayList<String> visitedTiles = new ArrayList<String>(); // Unique visited tiles.
 	PriorityQueue<Position> frontier = new PriorityQueue<>(positionComparator); // Container for alternative plans.
 	PlBeliefSet bs = new PlBeliefSet(); // Knowledge base.
@@ -295,7 +295,7 @@ public class MyAI extends Agent
 					// Kill the Wumpus! (Agent has an arrow  + Wumpus' location is known + Ther eis no pit there)
 
 					if (DEBUG) System.out.println("Decided to kill the Wumpus.");
-					wumpusKillingTiles(wumpusTiles);
+					wumpusKillingTiles(wumpusTiles, currentState);
 					for (String tile : wumpusTiles) {
 						tscore = Integer.MAX_VALUE;
 						LinkedList<Integer> goalPosition = new LinkedList<>();
@@ -338,6 +338,23 @@ public class MyAI extends Agent
 			if (DEBUG)  System.out.println("\nA NEW plan: " + plan);
 			frontier.clear();
 		}
+
+		/*if(plan.size() == 0 && !killWumpus) {
+			tmpPlan.clear();
+			SearchAI.printState(currentState, "Final state: ");
+			frontier.clear();
+			fakeGoal.clear();
+			fakeGoal.add(0);
+			fakeGoal.add(0);
+			tmpPlan = SearchAI.searchPath(currentState, fakeGoal, null, false, maxRow, maxCol, safeTiles);
+			tmpPlan.add(Action.CLIMB);
+			Position currentPosition = new Position(""+fakeGoal.get(0)+fakeGoal.get(1), tmpPlan.size(), tmpPlan);
+			frontier.add(currentPosition);
+			plan.clear();
+			plan.addAll(tmpPlan);
+			//plan.add(Action.CLIMB);
+			//tmpPlan = SearchAI.searchPath(currentState, fakeGoal, null, false, maxRow, maxCol, safeTiles);
+		}*/
 
 		// Pick the next action from the current plan.
 		if (DEBUG) System.out.println("The remaining plan: " + plan + "\n");
@@ -404,12 +421,20 @@ public class MyAI extends Agent
 	}
 
 	// Get tiles that the wumpus can be shoot from.
-	private void wumpusKillingTiles(ArrayList<String> wumpusTiles) {
+	private void wumpusKillingTiles(ArrayList<String> wumpusTiles, SearchAI.State currentState) {
+
+
 
 		for(int i=0; i<safeTiles.size(); i++) {
 			if(Integer.parseInt(safeTiles.get(i).substring(0, 1)) == Integer.parseInt(wumpusPosition.substring(0,1))
 				|| Integer.parseInt(safeTiles.get(i).substring(1, 2)) == Integer.parseInt(wumpusPosition.substring(1,2))) {
-				wumpusTiles.add(safeTiles.get(i));
+
+				if (currentState.positionX != Integer.parseInt(safeTiles.get(i).substring(0, 1))
+				&& currentState.positionY != Integer.parseInt(safeTiles.get(i).substring(1, 2))) {
+					wumpusTiles.add(safeTiles.get(i));
+				}
+
+
 			}
 		}
 
