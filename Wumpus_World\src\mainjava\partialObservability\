@@ -1,0 +1,228 @@
+package partialObservability;
+import fullObservability.SearchAI;
+import org.tweetyproject.logics.pl.reasoner.*;
+import org.tweetyproject.logics.pl.syntax.*;
+import org.tweetyproject.logics.pl.parser.*;
+import wumpus.Agent;
+
+import java.io.IOException;
+
+public class MyAI extends Agent
+{
+
+
+
+
+/*
+	// slide 23
+	public static void main(String[] args) throws IOException {
+		Proposition p = new Proposition("p");
+		Proposition q = new Proposition("q");
+		Conjunction pAq = new Conjunction(p,q); // [[p, q]]
+		Disjunction pIq = new Disjunction(p,q); // [[p], [q], [p, q]]
+		// http://tweetyproject.org/api/1.17/net/sf/tweety/logics/pl/syntax/Implication.html
+		Implication i = new Implication(p,q); // [[q], [p, q], []]
+		// slide 24
+		PlParser plParser = new PlParser();
+		PlFormula f = plParser.parseFormula("!a && b"); // !a&&b
+		PlFormula g = plParser.parseFormula("b || c"); // b||c
+		PlFormula h = f.combineWithAnd(g).toDnf(); // (!a&&b&&b)||(!a&&b&&c)
+		// slide 25
+		PlBeliefSet bs = new PlBeliefSet(); // { }
+		Proposition a = new Proposition("a");
+		Proposition b = new Proposition("b");
+		bs.add((PlFormula) a.complement().combineWithOr(b)); // { !a||b }
+		bs.add(a); // { !a||b, a }
+		AbstractPlReasoner r = new SatReasoner();
+		System.out.println(r.query(bs, b)); // true
+	}
+*/
+
+	public MyAI ( )
+	{
+
+	}
+
+	public Action getAction
+			(
+					boolean stench,
+					boolean breeze,
+					boolean glitter,
+					boolean bump,
+					boolean scream
+			)
+	{
+
+
+		PlBeliefSet bs = new PlBeliefSet();
+		PlParser plParser = new PlParser();
+
+
+
+
+
+
+
+		/*
+		When we are in a new square we can use the code below
+		to express what we experience (stench, breeze, glitter)
+		as string propositions that Tweety can read.
+		E.g: If we enter square 2,3 and we experience breeze,
+		no stench and no glitter, the propositions
+		"B23", "!S23", "!G23" are created inside the strings
+		new_breeze_proposition, new_stench_proposition and
+		new_glitter_proposition. These strings can be passed
+		to the Tweety knowledge base.
+
+		The code does not work yet because I have not succeded
+		in importing the state class from another file
+
+		*/
+
+		/* Create new strings */
+		String new_breeze_proposition;
+		String new_stench_proposition;
+		String new_glitter_proposition;
+
+
+
+		/* Collect position,
+		* switch which line is
+		*  muted below after importing
+		*  the state class */
+
+		// String position_string = Integer.toString(state.positionX) + Integer.toString(state.positionY);
+		String position_string = Integer.toString(3) + Integer.toString(3);
+
+
+		// We temporarerly set breeze to TRUE to test if we can build a
+		// logical statement:
+
+		breeze = true;
+
+		/* Create string propositions */
+		if (breeze) {
+			new_breeze_proposition = "B" + position_string;
+		} else {
+			new_breeze_proposition = "!B" + position_string;
+		};
+		if (stench) {
+			new_stench_proposition = "S" + position_string;
+		} else {
+			new_stench_proposition = "!S" + position_string;
+		};
+		if (glitter) {
+			new_glitter_proposition = "G" + position_string;
+		} else {
+			new_glitter_proposition = "!G" + position_string;
+		};
+
+
+
+		// Construct a new LOGICAL FORMULA BASED ON NEW POSITION
+		// WE ARE ON POSITION XY, stored in the string position_string
+		// if the String new_breeze_proposition contains: "B13"
+
+		// We want to express the following relationship, but given
+		// position XY instead of position 13
+		// "B13 <=> (P13 || P10 || P03 || P23)"
+
+		String new_logic = "";
+
+		// Make sure that we have a breeze before creating logical statements
+		if (new_breeze_proposition.indexOf('!') == -1) {
+
+			// We get the position from the String new_breeze_proposition
+			String only_XY = new_breeze_proposition.substring(Math.max(new_breeze_proposition.length() - 2, 0));
+
+			int i=Integer.parseInt(only_XY);
+			String position_string1 = "P" + Integer.toString(i - 10);
+			String position_string2 = "P" + Integer.toString(i + 10);
+			String position_string3 = "P" + Integer.toString(i - 1);
+			String position_string4 = "P" + Integer.toString(i + 1);
+
+			// We construct the logical rule inside the string new_logic
+			// that we can give to our Tweety knowledge base
+			new_logic = new_breeze_proposition + " <=> ( " + position_string1 + " || " + position_string2 + " || " + position_string3 + " || " + position_string4 + " )";
+
+			// We can now give the following two strings to Tweety:
+			// new_breeze_proposition and new_logic
+
+			// A similar derivations as in new_logic can also be created
+			// for stench, but I would like some confirmation
+			// in that I am not crazy before taking that step
+
+		}
+
+		System.out.println("We have created the following logical statement:");
+		System.out.println(new_logic);
+		System.out.println("");
+
+		/* I have not changed anything below this point /Johan */
+
+
+
+
+
+
+
+
+
+
+		
+
+
+
+		// [1,1]
+		bs.add((PlFormula) new Negation(new Proposition ("P11"))); // r1
+		bs.add((PlFormula) new Negation(new Proposition ("B11"))); // r4
+
+
+		try {
+			// PlFormula f = plParser.parseFormula("(B11 => (P12 || P21)) && ((P12 || P21) => B11)"); // r2
+			PlFormula f = plParser.parseFormula("B11 <=> (P12 || P21)"); // r2
+			bs.add(f);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		// Should be enough to derive !P12.
+		System.out.println(bs);
+
+		AbstractPlReasoner r = new SimplePlReasoner();
+		Proposition question = new  Proposition("P12");
+		System.out.println("Is P12 true? " + r.query(bs, (PlFormula) question));
+		System.out.println("Is !P12 true? " + r.query(bs, (PlFormula) question.complement()));
+
+
+
+
+/*
+		// [2,1]
+		bs.add((PlFormula) new Proposition("B21")); // r5
+		try {
+			PlFormula f = plParser.parseFormula("B21 <=> (P11 || P22 || P31)"); // r3
+			bs.add(f);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		// [1,2]
+		bs.add((PlFormula) new Proposition("!B12")); // r11
+		try {
+			PlFormula f = plParser.parseFormula("B12 <=> (P11 || P22 || P13)"); // r12
+			bs.add(f);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		// Should be enough to derive P22.
+*/
+
+
+		// Figure out safe moves.
+
+		// Return a safe move with the lowest cost.
+		return Action.FORWARD;
+
+	}
+
+}
