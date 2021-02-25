@@ -413,8 +413,8 @@ public class MyAI extends Agent
 			if(Integer.parseInt(safeTiles.get(i).substring(0, 1)) == Integer.parseInt(wumpusPosition.substring(0,1))
 				|| Integer.parseInt(safeTiles.get(i).substring(1, 2)) == Integer.parseInt(wumpusPosition.substring(1,2))) {
 
-				if (currentState.positionX != Integer.parseInt(safeTiles.get(i).substring(0, 1))
-				&& currentState.positionY != Integer.parseInt(safeTiles.get(i).substring(1, 2))) {
+				if (!(currentState.positionX == Integer.parseInt(safeTiles.get(i).substring(0, 1))
+						&& currentState.positionY == Integer.parseInt(safeTiles.get(i).substring(1, 2)))) {
 					wumpusTiles.add(safeTiles.get(i));
 				}
 
